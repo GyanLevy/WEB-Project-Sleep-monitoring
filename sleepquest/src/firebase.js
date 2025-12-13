@@ -1,25 +1,22 @@
 // Firebase configuration for SleepQuest
-// Project: web-sleep-monitoring
+// Uses environment variables for security - see .env.example
 //
-// IMPORTANT: You need to get the web API key from Firebase Console:
-// 1. Go to https://console.firebase.google.com
-// 2. Select project "web-sleep-monitoring"
-// 3. Go to Project Settings > General > Your apps
-// 4. If no web app exists, click "Add app" > Web
-// 5. Copy the apiKey value and paste it below
+// To set up:
+// 1. Copy .env.example to .env.local
+// 2. Fill in your Firebase credentials
+// 3. Restart the dev server
 
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyBZt_nOqZXaVQskg9H6u8fSj-42gmySOIY",
-  authDomain: "web-sleep-monitoring.firebaseapp.com",
-  projectId: "web-sleep-monitoring",
-  storageBucket: "web-sleep-monitoring.firebasestorage.app",
-  messagingSenderId: "729693086116",
-  appId: "1:729693086116:web:66bc46b74d91bd4b652131",
-  measurementId: "G-V2G8YRFTFP"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
