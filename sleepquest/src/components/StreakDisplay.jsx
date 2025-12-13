@@ -1,0 +1,77 @@
+import { useAuth } from '../context/AuthContext';
+
+export default function StreakDisplay({ compact = false }) {
+  const { streak, totalDays, completedDays } = useAuth();
+
+  const progressPercent = (completedDays / totalDays) * 100;
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 rounded-xl border border-slate-700/50">
+        <span className="text-2xl">🔥</span>
+        <div className="text-white font-bold">{streak}</div>
+        <span className="text-slate-400 text-sm">ימים</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
+      {/* Streak counter */}
+      <div className="flex items-center justify-center gap-4 mb-6">
+        <div className="relative">
+          <div className="text-6xl animate-bounce-slow">🔥</div>
+          <div className="absolute -top-1 -left-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+            {streak}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-3xl font-bold text-white">יום {completedDays + 1}</div>
+          <div className="text-slate-400">מתוך {totalDays}</div>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="relative">
+        <div className="h-4 bg-slate-700/50 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full transition-all duration-1000 ease-out relative"
+            style={{ width: `${progressPercent}%` }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
+          </div>
+        </div>
+
+        {/* Day markers */}
+        <div className="flex justify-between mt-2">
+          {Array.from({ length: totalDays }, (_, i) => (
+            <div
+              key={i}
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                i < completedDays
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30'
+                  : i === completedDays
+                  ? 'bg-slate-700 text-white ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900'
+                  : 'bg-slate-700/50 text-slate-500'
+              }`}
+            >
+              {i + 1}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Motivational message */}
+      <div className="mt-6 text-center">
+        <p className="text-slate-300 text-sm">
+          {streak === 0 && "התחל את המסע שלך היום! 🌙"}
+          {streak === 1 && "התחלה מצוינת! המשך כך! ⭐"}
+          {streak >= 2 && streak < 5 && "אתה בונה הרגל נהדר! 🌟"}
+          {streak >= 5 && streak < 8 && "עקביות מדהימה! כמעט שם! 🏆"}
+          {streak >= 8 && streak < 10 && "מדהים! אתה אלוף שינה! 👑"}
+          {streak >= 10 && "אגדה! השלמת את האתגר! 🎉"}
+        </p>
+      </div>
+    </div>
+  );
+}
