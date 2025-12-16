@@ -28,9 +28,17 @@ sleepquest/
 │   ├── firebase.js         # Firebase SDK config
 │   ├── components/
 │   │   ├── LoginScreen.jsx       # Token login UI
-│   │   ├── QuestionnaireFlow.jsx # Step-by-step questions
+│   │   ├── QuestionnaireFlow.jsx # Step-by-step questions (presentation)
 │   │   ├── CompletionScreen.jsx  # Success + game button
-│   │   └── StreakDisplay.jsx     # Gamification component
+│   │   ├── StreakDisplay.jsx     # Gamification component
+│   │   └── ui/                   # Reusable UI components
+│   │       ├── Button.jsx            # Styled button component
+│   │       ├── Card.jsx              # Card container component
+│   │       ├── LoadingSpinner.jsx    # Loading indicator
+│   │       ├── ProgressBar.jsx       # Progress indicator
+│   │       └── index.js              # UI components barrel export
+│   ├── hooks/
+│   │   └── useQuestionnaireLogic.js  # Questionnaire state & logic
 │   ├── context/
 │   │   └── AuthContext.jsx       # State + Firestore logic
 │   ├── data/
@@ -62,12 +70,28 @@ sleepquest/
 
 ### src/components/ - UI Components
 
-| File                    | Purpose                                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `LoginScreen.jsx`       | Login form with 6-digit token input. Validates token format, creates/fetches user in Firestore                              |
-| `QuestionnaireFlow.jsx` | Step-by-step question display with progress bar. Handles conditional logic (Q8 depends on Q7). Submits answers to Firestore |
-| `CompletionScreen.jsx`  | Success screen after diary submission. Shows confetti animation, streak, and "Access Daily Game" button                     |
-| `StreakDisplay.jsx`     | Gamification component showing current streak, progress bar with day markers, motivational messages                         |
+| File                    | Purpose                                                                                                   |
+| ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| `LoginScreen.jsx`       | Login form with 6-digit token input. Validates token format, creates/fetches user in Firestore            |
+| `QuestionnaireFlow.jsx` | Presentation component for step-by-step question display. Delegates logic to `useQuestionnaireLogic` hook |
+| `CompletionScreen.jsx`  | Success screen after diary submission. Shows confetti animation, streak, and "Access Daily Game" button   |
+| `StreakDisplay.jsx`     | Gamification component showing current streak, progress bar with day markers, motivational messages       |
+
+#### src/components/ui/ - Reusable UI Components
+
+| File                 | Purpose                                                    |
+| -------------------- | ---------------------------------------------------------- |
+| `Button.jsx`         | Styled button component with RTL support and loading state |
+| `Card.jsx`           | Card container component for consistent layout styling     |
+| `LoadingSpinner.jsx` | Loading indicator with animation                           |
+| `ProgressBar.jsx`    | Progress indicator for questionnaire completion            |
+| `index.js`           | Barrel export for easy importing of all UI components      |
+
+### src/hooks/ - Custom React Hooks
+
+| File                       | Purpose                                                                                                                                                                                                                                   |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useQuestionnaireLogic.js` | Encapsulates questionnaire state management and business logic. Handles: question filtering (conditional logic), navigation (next/back), answer management, form submission. Returns state and action handlers to presentation components |
 
 ### src/context/ - State Management
 
@@ -101,6 +125,27 @@ students/{token}
       ├── submittedAt: timestamp
       └── answers: { q1_class: "ט", q2_gender: "בן", ... }
 ```
+
+---
+
+## Architecture Notes
+
+### Component Refactoring (Dec 2025)
+
+The application was refactored to meet academic standards for React best practices:
+
+1. **Separation of Concerns**: Logic extracted from presentation components into custom hooks
+2. **Single Responsibility**: Large components broken down into smaller, focused UI components
+3. **Reusability**: Common UI elements (Button, Card, LoadingSpinner, ProgressBar) abstracted into `src/components/ui/`
+4. **Maintainability**: Business logic in `useQuestionnaireLogic` hook can be tested independently
+
+### Recent Bug Fixes
+
+**Temporal Dead Zone Error (Dec 15, 2025)**:
+
+- **Issue**: `handleSubmit` was called in `handleNext` but declared after it, causing "Cannot access variable before it is declared" error
+- **Fix**: Reordered function declarations in `useQuestionnaireLogic.js` to declare `handleSubmit` before `handleNext`
+- **Additional**: Added `handleSubmit` to `handleNext`'s dependency array, updated `handleAnswer` dependencies to use full `currentQuestion` object per React Compiler inference
 
 ---
 
