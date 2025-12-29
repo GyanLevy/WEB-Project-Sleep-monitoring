@@ -29,8 +29,8 @@ export default function CompletionScreen() {
   }, [isAuthenticated, hasSubmittedToday, navigate]);
 
   const handleGameAccess = () => {
-    const gameUrl = `https://sleepquest.game/start/${token}`;
-    window.open(gameUrl, '_blank', 'noopener,noreferrer');
+    // Open local game - it reads completedDays from localStorage
+    window.open('/game.html', '_blank', 'noopener,noreferrer');
   };
 
   const isCompleted = completedDays >= 10;

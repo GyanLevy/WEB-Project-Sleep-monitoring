@@ -121,8 +121,8 @@ function QuestionCard({ question, answer, isTransitioning, direction, onAnswer }
     >
       {/* Question Text */}
       <div className="mb-8">
-        <span className="inline-block px-3 py-1 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-medium rounded-full mb-4 transition-colors duration-300">
-          📝 בחירה
+        <span className="inline-block px-4 py-2 bg-indigo-100 dark:bg-indigo-500/20 text-2xl rounded-full mb-4 transition-colors duration-300">
+          {question.emoji || '📝'}
         </span>
         <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white leading-relaxed transition-colors duration-300">
           {question.text_he}

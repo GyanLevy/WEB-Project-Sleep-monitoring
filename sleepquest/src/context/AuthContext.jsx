@@ -70,6 +70,14 @@ export function AuthProvider({ children }) {
         setAuthState(existingData);
         // Store token locally for persistence across page refreshes
         localStorage.setItem('sleepquest_token', token);
+        
+        // Sync with localStorage for game integration
+        localStorage.setItem('sleepquest_game_data', JSON.stringify({
+          completedDays: existingData.responses.length,
+          streak: existingData.streak,
+          token: token
+        }));
+        
         setIsLoading(false);
         const today = getTodayDate();
         return { success: true, hasSubmittedToday: existingData.lastSubmissionDate === today };
@@ -181,12 +189,25 @@ export function AuthProvider({ children }) {
         answers
       };
 
-      setAuthState(prev => ({
-        ...prev,
-        lastSubmissionDate: today,
-        streak: newStreak,
-        responses: [...prev.responses, newResponse]
-      }));
+      setAuthState(prev => {
+        const newResponses = [...prev.responses, newResponse];
+        const newState = {
+          ...prev,
+          lastSubmissionDate: today,
+          streak: newStreak,
+          responses: newResponses
+        };
+
+        // Sync with localStorage for game integration
+        // The game reads this to unlock levels based on questionnaire progress
+        localStorage.setItem('sleepquest_game_data', JSON.stringify({
+          completedDays: newResponses.length,
+          streak: newStreak,
+          token: prev.token
+        }));
+
+        return newState;
+      });
 
       return { success: true, streak: newStreak };
     } catch (error) {
