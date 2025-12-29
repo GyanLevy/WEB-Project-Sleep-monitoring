@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Enable dark mode with class selector (Tailwind v4) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Custom Animations */
 @keyframes shimmer {
   0% {
@@ -130,22 +133,35 @@
     30px 120px 0 rgba(255, 255, 255, 0.3);
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Light Mode */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(30, 41, 59, 0.5);
+  background: rgba(226, 232, 240, 0.8);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(79, 70, 229, 0.5);
+  background: rgba(99, 102, 241, 0.4);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.6);
+}
+
+/* Custom Scrollbar - Dark Mode */
+.dark ::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(79, 70, 229, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(79, 70, 229, 0.8);
 }
 
@@ -158,19 +174,28 @@ select {
   padding-right: 2.5rem;
 }
 
-/* Time Input Styling */
+/* Time Input Styling - Light Mode */
 input[type="time"] {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 input[type="time"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
+  filter: invert(0);
   opacity: 0.6;
   cursor: pointer;
 }
 
 input[type="time"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
+}
+
+/* Time Input Styling - Dark Mode */
+.dark input[type="time"] {
+  color-scheme: dark;
+}
+
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
 }
 
 /* Number Input Styling - Hide spinners */

@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import LoginScreen from './components/LoginScreen';
 import QuestionnaireFlow from './components/QuestionnaireFlow';
 import CompletionScreen from './components/CompletionScreen';
@@ -65,14 +66,17 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="font-sans antialiased">
-          <AppRoutes />
-        </div>
-      </Router>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <div className="font-sans antialiased">
+            <AppRoutes />
+          </div>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
 export default App;
+

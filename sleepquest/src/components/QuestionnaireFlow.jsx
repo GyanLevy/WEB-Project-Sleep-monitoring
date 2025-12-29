@@ -1,6 +1,5 @@
-import { useAuth } from '../context/AuthContext';
 import { useQuestionnaireLogic } from '../hooks/useQuestionnaireLogic';
-import { LoadingSpinner, ProgressBar, QuestionInput } from './ui';
+import { LoadingSpinner, ProgressBar, QuestionInput, ThemeToggle } from './ui';
 import StreakDisplay from './StreakDisplay';
 
 /**
@@ -30,14 +29,14 @@ export default function QuestionnaireFlow() {
   // Loading state when no question available
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 flex items-center justify-center transition-colors duration-300">
         <LoadingSpinner />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 flex flex-col transition-colors duration-300">
       {/* Header */}
       <QuestionnaireHeader 
         currentIndex={currentIndex}
@@ -82,19 +81,22 @@ export default function QuestionnaireFlow() {
 function QuestionnaireHeader({ currentIndex, completedDays, totalDays, onBack }) {
   return (
     <header className="p-4 flex items-center justify-between">
-      <button
-        onClick={onBack}
-        disabled={currentIndex === 0}
-        className="p-2 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onBack}
+          disabled={currentIndex === 0}
+          className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        <ThemeToggle />
+      </div>
       
       <div className="text-center">
-        <h1 className="text-white font-bold">יומן שינה</h1>
-        <p className="text-slate-400 text-sm">יום {completedDays + 1} מתוך {totalDays}</p>
+        <h1 className="text-slate-900 dark:text-white font-bold transition-colors duration-300">יומן שינה</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-sm transition-colors duration-300">יום {completedDays + 1} מתוך {totalDays}</p>
       </div>
 
       <StreakDisplay compact />
@@ -119,10 +121,10 @@ function QuestionCard({ question, answer, isTransitioning, direction, onAnswer }
     >
       {/* Question Text */}
       <div className="mb-8">
-        <span className="inline-block px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs font-medium rounded-full mb-4">
+        <span className="inline-block px-3 py-1 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-medium rounded-full mb-4 transition-colors duration-300">
           📝 בחירה
         </span>
-        <h2 className="text-2xl md:text-3xl font-bold text-white leading-relaxed">
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white leading-relaxed transition-colors duration-300">
           {question.text_he}
         </h2>
       </div>
@@ -149,7 +151,7 @@ function NavigationButton({ isLastQuestion, isSubmitting, canProceed, onNext }) 
       <button
         onClick={onNext}
         disabled={!canProceed || isSubmitting}
-        className="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 disabled:shadow-none transition-all duration-300 transform hover:scale-[1.02] disabled:hover:scale-100"
+        className="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-slate-400 disabled:to-slate-400 dark:disabled:from-slate-700 dark:disabled:to-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 disabled:shadow-none transition-all duration-300 transform hover:scale-[1.02] disabled:hover:scale-100"
       >
         {isSubmitting ? (
           <span className="flex items-center justify-center gap-2">

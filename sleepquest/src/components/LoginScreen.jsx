@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LoadingSpinner } from './ui';
+import { LoadingSpinner, ThemeToggle } from './ui';
 
 /**
  * LoginScreen Component
@@ -43,26 +43,31 @@ export default function LoginScreen() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 flex items-center justify-center transition-colors duration-300">
         <LoadingSpinner />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col items-center justify-center p-4">
-      {/* Stars background effect */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 flex flex-col items-center justify-center p-4 transition-colors duration-300">
+      {/* Stars background effect - only visible in dark mode */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-0 dark:opacity-100 transition-opacity duration-300">
         <div className="stars"></div>
       </div>
 
       {/* Main card */}
       <div className="relative z-10 w-full max-w-md">
+        {/* Theme Toggle - top of the card area */}
+        <div className="absolute top-0 left-0 -translate-y-full pb-4">
+          <ThemeToggle />
+        </div>
+
         {/* Logo/Header */}
         <LoginHeader />
 
         {/* Login Card */}
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
+        <div className="bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-slate-700/50 p-8 shadow-xl dark:shadow-2xl transition-colors duration-300">
           <LoginForm
             token={token}
             error={error}
@@ -97,10 +102,10 @@ function LoginHeader() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
         </svg>
       </div>
-      <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+      <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
         SleepQuest
       </h1>
-      <p className="text-slate-400 mt-2">עקוב אחר מסע השינה שלך</p>
+      <p className="text-slate-500 dark:text-slate-400 mt-2 transition-colors duration-300">עקוב אחר מסע השינה שלך</p>
     </div>
   );
 }
@@ -114,7 +119,7 @@ function LoginForm({ token, error, isLoading, onTokenChange, onSubmit }) {
     <form onSubmit={onSubmit} className="space-y-6">
       {/* Token Input */}
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">
+        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2 transition-colors duration-300">
           הכנס קוד גישה
         </label>
         <div className="relative">
@@ -125,23 +130,23 @@ function LoginForm({ token, error, isLoading, onTokenChange, onSubmit }) {
             value={token}
             onChange={onTokenChange}
             placeholder="000000"
-            className="w-full px-4 py-4 text-center text-2xl font-mono tracking-[0.5em] bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-4 text-center text-2xl font-mono tracking-[0.5em] bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             style={{ direction: 'ltr' }}
             maxLength={6}
             autoComplete="off"
           />
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm transition-colors duration-300">
             {token.length}/6
           </div>
         </div>
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 transition-colors duration-300">
           קוד הגישה בן 6 הספרות ניתן לך על ידי המורה שלך
         </p>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm text-center animate-shake">
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-4 text-red-600 dark:text-red-400 text-sm text-center animate-shake transition-colors duration-300">
           {error}
         </div>
       )}
@@ -150,7 +155,7 @@ function LoginForm({ token, error, isLoading, onTokenChange, onSubmit }) {
       <button
         type="submit"
         disabled={token.length !== 6 || isLoading}
-        className="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 transform hover:scale-[1.02] disabled:hover:scale-100"
+        className="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-slate-400 disabled:to-slate-400 dark:disabled:from-slate-600 dark:disabled:to-slate-600 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 transform hover:scale-[1.02] disabled:hover:scale-100"
       >
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
@@ -176,10 +181,10 @@ function Divider() {
   return (
     <div className="relative my-8">
       <div className="absolute inset-0 flex items-center">
-        <div className="w-full border-t border-slate-700"></div>
+        <div className="w-full border-t border-slate-200 dark:border-slate-700 transition-colors duration-300"></div>
       </div>
       <div className="relative flex justify-center text-sm">
-        <span className="px-4 bg-slate-800/50 text-slate-500">גישה נוספת</span>
+        <span className="px-4 bg-white/80 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 transition-colors duration-300">גישה נוספת</span>
       </div>
     </div>
   );
@@ -194,14 +199,14 @@ function AlternativeAccessButtons() {
     <div className="grid grid-cols-2 gap-4">
       <button
         type="button"
-        className="py-3 px-4 bg-slate-700/30 hover:bg-slate-700/50 border border-slate-600/50 text-slate-400 text-sm rounded-xl transition-all duration-200"
+        className="py-3 px-4 bg-slate-100 dark:bg-slate-700/30 hover:bg-slate-200 dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 text-sm rounded-xl transition-all duration-200"
         onClick={() => alert('כניסת מורים תהיה זמינה בקרוב')}
       >
         כניסת מורה
       </button>
       <button
         type="button"
-        className="py-3 px-4 bg-slate-700/30 hover:bg-slate-700/50 border border-slate-600/50 text-slate-400 text-sm rounded-xl transition-all duration-200"
+        className="py-3 px-4 bg-slate-100 dark:bg-slate-700/30 hover:bg-slate-200 dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 text-sm rounded-xl transition-all duration-200"
         onClick={() => alert('כניסת מנהלים תהיה זמינה בקרוב')}
       >
         כניסת מנהל
@@ -217,7 +222,7 @@ function AlternativeAccessButtons() {
 function PrivacyNotice() {
   return (
     <div className="mt-6 text-center">
-      <div className="inline-flex items-center gap-2 text-xs text-slate-500">
+      <div className="inline-flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 transition-colors duration-300">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>

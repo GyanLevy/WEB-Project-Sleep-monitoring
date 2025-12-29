@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useConfetti } from '../hooks/useConfetti';
-import { Confetti, StatsCard } from './ui';
+import { Confetti, StatsCard, ThemeToggle } from './ui';
 import StreakDisplay from './StreakDisplay';
 
 /**
@@ -36,7 +36,7 @@ export default function CompletionScreen() {
   const isCompleted = completedDays >= 10;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 flex flex-col items-center justify-center p-4 relative overflow-hidden transition-colors duration-300">
       {/* Confetti Animation */}
       <Confetti show={showConfetti} />
 
@@ -44,6 +44,11 @@ export default function CompletionScreen() {
       <BackgroundGlow />
 
       <div className="relative z-10 w-full max-w-md text-center">
+        {/* Theme Toggle - top of the card area */}
+        <div className="absolute top-0 left-0 -translate-y-full pb-4">
+          <ThemeToggle />
+        </div>
+
         {/* Success Icon */}
         <SuccessIcon />
 
@@ -64,7 +69,7 @@ export default function CompletionScreen() {
         {/* Game Access Button */}
         <GameAccessButton onClick={handleGameAccess} />
 
-        <p className="text-slate-500 text-sm">
+        <p className="text-slate-500 dark:text-slate-500 text-sm transition-colors duration-300">
           שחק את משחק הפרס היומי שלך וצבור נקודות בונוס!
         </p>
 
@@ -72,7 +77,7 @@ export default function CompletionScreen() {
         {!isCompleted && <ComeBackMessage />}
 
         {/* Token reminder */}
-        <div className="mt-6 text-slate-600 text-xs" style={{ direction: 'ltr' }}>
+        <div className="mt-6 text-slate-400 dark:text-slate-600 text-xs transition-colors duration-300" style={{ direction: 'ltr' }}>
           קוד הגישה שלך: <span className="font-mono">{token}</span>
         </div>
       </div>
@@ -87,7 +92,7 @@ export default function CompletionScreen() {
 function BackgroundGlow() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse-slow" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-indigo-300/20 dark:from-indigo-500/20 to-purple-300/20 dark:to-purple-500/20 rounded-full blur-3xl animate-pulse-slow" />
     </div>
   );
 }
@@ -115,11 +120,11 @@ function SuccessIcon() {
 function CongratulationsMessage({ isCompleted }) {
   return (
     <>
-      <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+      <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4 transition-colors duration-300">
         {isCompleted ? '🏆 אלוף!' : '🎉 כל הכבוד!'}
       </h1>
       
-      <p className="text-xl text-slate-300 mb-8">
+      <p className="text-xl text-slate-600 dark:text-slate-300 mb-8 transition-colors duration-300">
         {isCompleted 
           ? "סיימת את כל 10 ימי האתגר!"
           : "סיימת את יומן השינה להיום!"
@@ -154,10 +159,10 @@ function GameAccessButton({ onClick }) {
  */
 function ComeBackMessage() {
   return (
-    <div className="mt-8 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-xl">
-      <p className="text-indigo-300 text-sm">
+    <div className="mt-8 p-4 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-xl transition-colors duration-300">
+      <p className="text-indigo-600 dark:text-indigo-300 text-sm transition-colors duration-300">
         ⏰ חזור מחר כדי להמשיך את הרצף שלך!<br/>
-        <span className="text-indigo-400/70">היומן הבא יהיה זמין לאחר חצות.</span>
+        <span className="text-indigo-500 dark:text-indigo-400/70 transition-colors duration-300">היומן הבא יהיה זמין לאחר חצות.</span>
       </p>
     </div>
   );

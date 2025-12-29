@@ -27,7 +27,7 @@ function TimeInput({ value, onChange }) {
         type="time"
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
-        className="text-4xl font-mono bg-slate-800/50 border-2 border-slate-700 focus:border-indigo-500 rounded-2xl px-8 py-6 text-white text-center outline-none transition-colors"
+        className="text-4xl font-mono bg-white dark:bg-slate-800/50 border-2 border-slate-300 dark:border-slate-700 focus:border-indigo-500 dark:focus:border-indigo-500 rounded-2xl px-8 py-6 text-slate-900 dark:text-white text-center outline-none transition-colors"
         style={{ direction: 'ltr' }}
       />
     </div>
@@ -41,7 +41,7 @@ function NumberInput({ question, value, onChange }) {
       <div className="flex items-center gap-6">
         <button
           onClick={() => onChange(Math.max(0, (value || 0) - 5))}
-          className="w-16 h-16 rounded-full bg-slate-800 hover:bg-slate-700 text-white text-3xl font-bold transition-colors flex items-center justify-center"
+          className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white text-3xl font-bold transition-colors flex items-center justify-center"
         >
           −
         </button>
@@ -53,17 +53,17 @@ function NumberInput({ question, value, onChange }) {
               const val = parseInt(e.target.value) || 0;
               onChange(Math.max(0, val));
             }}
-            className="w-full text-5xl font-bold bg-transparent text-white text-center outline-none"
+            className="w-full text-5xl font-bold bg-transparent text-slate-900 dark:text-white text-center outline-none transition-colors"
             style={{ direction: 'ltr' }}
             min={0}
           />
           {question.unit_he && (
-            <span className="text-slate-400 text-sm">{question.unit_he}</span>
+            <span className="text-slate-500 dark:text-slate-400 text-sm transition-colors duration-300">{question.unit_he}</span>
           )}
         </div>
         <button
           onClick={() => onChange((value || 0) + 5)}
-          className="w-16 h-16 rounded-full bg-slate-800 hover:bg-slate-700 text-white text-3xl font-bold transition-colors flex items-center justify-center"
+          className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white text-3xl font-bold transition-colors flex items-center justify-center"
         >
           +
         </button>
@@ -82,8 +82,8 @@ function RadioInput({ question, value, onChange }) {
           onClick={() => onChange(option)}
           className={`w-full p-5 rounded-xl border-2 text-right transition-all duration-200 ${
             value === option
-              ? 'bg-indigo-500/20 border-indigo-500 text-white'
-              : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:border-slate-600'
+              ? 'bg-indigo-50 dark:bg-indigo-500/20 border-indigo-500 text-slate-900 dark:text-white'
+              : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
           }`}
         >
           <div className="flex items-center gap-4">
@@ -91,7 +91,7 @@ function RadioInput({ question, value, onChange }) {
               className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
                 value === option
                   ? 'border-indigo-500 bg-indigo-500'
-                  : 'border-slate-600'
+                  : 'border-slate-300 dark:border-slate-600'
               }`}
             >
               {value === option && (
@@ -115,7 +115,7 @@ function TextInput({ value, onChange }) {
       type="text"
       value={value || ''}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full p-4 bg-slate-800/50 border-2 border-slate-700 focus:border-indigo-500 rounded-xl text-white outline-none transition-colors"
+      className="w-full p-4 bg-white dark:bg-slate-800/50 border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-500 dark:focus:border-indigo-500 rounded-xl text-slate-900 dark:text-white outline-none transition-colors"
       placeholder="הכנס תשובה..."
     />
   );
