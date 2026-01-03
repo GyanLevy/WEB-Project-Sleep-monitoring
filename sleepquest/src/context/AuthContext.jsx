@@ -1,15 +1,13 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
 import { 
   doc, 
   getDoc, 
-  setDoc, 
   collection, 
-  getDocs,
-  serverTimestamp 
+  getDocs
 } from 'firebase/firestore';
+import AuthContext from './createAuthContext';
 
-const AuthContext = createContext(null);
 
 // Get today's date in YYYY-MM-DD format
 const getTodayDate = () => {
@@ -40,8 +38,10 @@ export function AuthProvider({ children }) {
         return {
           token,
           classId: data.classId || 'default',
-          lastSubmissionDate: data.lastSubmissionDate || null,
+          coins: data.coins || 0,
+          inventory: data.inventory || ['skin_default'],
           streak: data.streak || 0,
+          lastSubmissionDate: data.lastSubmissionDate || null,
           totalDays: 10,
           responses
         };
@@ -64,6 +64,16 @@ export function AuthProvider({ children }) {
 
     try {
       // Check if student exists in Firestore
+      const studentRef = doc(db, 'students', token);
+      const studentSnap = await getDoc(studentRef);
+      
+      // STRICT VALIDATION: Student must exist in Firestore
+      if (!studentSnap.exists()) {
+        setIsLoading(false);
+        return { success: false, error: 'קוד לא תקף' }; // "Invalid Token" in Hebrew
+      }
+
+      // Student exists - fetch full data including submissions
       const existingData = await fetchStudentData(token);
       
       if (existingData) {
@@ -75,6 +85,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem('sleepquest_game_data', JSON.stringify({
           completedDays: existingData.responses.length,
           streak: existingData.streak,
+          coins: existingData.coins,
           token: token
         }));
         
@@ -83,30 +94,8 @@ export function AuthProvider({ children }) {
         return { success: true, hasSubmittedToday: existingData.lastSubmissionDate === today };
       }
 
-      // Create new student in Firestore
-      const studentRef = doc(db, 'students', token);
-      const newStudentData = {
-        classId: 'default',
-        lastSubmissionDate: null,
-        streak: 0,
-        createdAt: serverTimestamp()
-      };
-
-      await setDoc(studentRef, newStudentData);
-
-      const newState = {
-        token,
-        classId: 'default',
-        lastSubmissionDate: null,
-        streak: 0,
-        totalDays: 10,
-        responses: []
-      };
-
-      setAuthState(newState);
-      localStorage.setItem('sleepquest_token', token);
       setIsLoading(false);
-      return { success: true, hasSubmittedToday: false };
+      return { success: false, error: 'שגיאה בטעינת נתוני המשתמש' };
     } catch (error) {
       console.error('Login error:', error);
       setIsLoading(false);
@@ -123,6 +112,10 @@ export function AuthProvider({ children }) {
         const data = await fetchStudentData(savedToken);
         if (data) {
           setAuthState(data);
+        } else {
+          // Token no longer valid in Firestore, clear local storage
+          localStorage.removeItem('sleepquest_token');
+          localStorage.removeItem('sleepquest_game_data');
         }
         setIsLoading(false);
       }
@@ -133,6 +126,7 @@ export function AuthProvider({ children }) {
   // Logout
   const logout = () => {
     localStorage.removeItem('sleepquest_token');
+    localStorage.removeItem('sleepquest_game_data');
     setAuthState(null);
   };
 
@@ -150,71 +144,30 @@ export function AuthProvider({ children }) {
     return authState.lastSubmissionDate === today;
   }, [authState]);
 
-  // Submit daily diary to Firestore
-  const submitDiary = async (answers) => {
-    if (!canSubmitToday()) {
-      return { success: false, error: 'כבר מילאת את היומן להיום' };
-    }
-
-    const today = getTodayDate();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-    // Calculate streak
-    let newStreak = 1;
-    if (authState.lastSubmissionDate === yesterdayStr) {
-      newStreak = authState.streak + 1;
-    }
-
-    try {
-      // Save submission to subcollection
-      const submissionRef = doc(db, 'students', authState.token, 'submissions', today);
-      await setDoc(submissionRef, {
-        submittedAt: serverTimestamp(),
-        answers
-      });
-
-      // Update student document
-      const studentRef = doc(db, 'students', authState.token);
-      await setDoc(studentRef, {
-        lastSubmissionDate: today,
-        streak: newStreak
-      }, { merge: true });
-
-      // Update local state
-      const newResponse = {
-        date: today,
-        submittedAt: new Date().toISOString(),
-        answers
+  // Update auth state after diary submission (called by useQuestionnaireLogic)
+  const updateAfterSubmission = useCallback((updates) => {
+    setAuthState(prev => {
+      if (!prev) return prev;
+      
+      const newState = {
+        ...prev,
+        lastSubmissionDate: updates.lastSubmissionDate,
+        streak: updates.streak,
+        coins: updates.coins,
+        responses: [...prev.responses, updates.newResponse]
       };
 
-      setAuthState(prev => {
-        const newResponses = [...prev.responses, newResponse];
-        const newState = {
-          ...prev,
-          lastSubmissionDate: today,
-          streak: newStreak,
-          responses: newResponses
-        };
+      // Sync with localStorage for game integration
+      localStorage.setItem('sleepquest_game_data', JSON.stringify({
+        completedDays: newState.responses.length,
+        streak: newState.streak,
+        coins: newState.coins,
+        token: prev.token
+      }));
 
-        // Sync with localStorage for game integration
-        // The game reads this to unlock levels based on questionnaire progress
-        localStorage.setItem('sleepquest_game_data', JSON.stringify({
-          completedDays: newResponses.length,
-          streak: newStreak,
-          token: prev.token
-        }));
-
-        return newState;
-      });
-
-      return { success: true, streak: newStreak };
-    } catch (error) {
-      console.error('Submit error:', error);
-      return { success: false, error: 'שגיאה בשמירת היומן. נסה שוב.' };
-    }
-  };
+      return newState;
+    });
+  }, []);
 
   // Get all responses (for CSV export)
   const getAllResponses = () => {
@@ -226,6 +179,8 @@ export function AuthProvider({ children }) {
     isLoading,
     token: authState?.token,
     classId: authState?.classId,
+    coins: authState?.coins || 0,
+    inventory: authState?.inventory || ['skin_default'],
     streak: authState?.streak || 0,
     totalDays: authState?.totalDays || 10,
     completedDays: authState?.responses?.length || 0,
@@ -234,7 +189,7 @@ export function AuthProvider({ children }) {
     logout,
     canSubmitToday,
     hasSubmittedToday,
-    submitDiary,
+    updateAfterSubmission,
     getAllResponses
   };
 
@@ -245,12 +200,3 @@ export function AuthProvider({ children }) {
   );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
-
-export default AuthContext;

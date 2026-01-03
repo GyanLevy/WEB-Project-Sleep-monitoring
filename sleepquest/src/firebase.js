@@ -1,13 +1,6 @@
-// Firebase configuration for SleepQuest
-// Uses environment variables for security - see .env.example
-//
-// To set up:
-// 1. Copy .env.example to .env.local
-// 2. Fill in your Firebase credentials
-// 3. Restart the dev server
-
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -24,5 +17,6 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore
 export const db = getFirestore(app);
+export const auth = getAuth(app);
 
 export default app;

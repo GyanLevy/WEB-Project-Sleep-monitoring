@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './context/ThemeContext';
 import LoginScreen from './components/LoginScreen';
 import QuestionnaireFlow from './components/QuestionnaireFlow';
@@ -79,4 +80,3 @@ function App() {
 }
 
 export default App;
-
