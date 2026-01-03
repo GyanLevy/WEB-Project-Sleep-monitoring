@@ -1,0 +1,4 @@
+Flask==3.0.0
+googlemaps==4.10.0
+polyline==2.0.2
+python-dotenv==1.0.0

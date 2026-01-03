@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Last-Mile Walking Navigation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1419 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 247, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 195, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(15, 20, 35, 0.95);
+            border-radius: 15px;
+            box-shadow: 
+                0 0 40px rgba(0, 247, 255, 0.3),
+                0 20px 60px rgba(0, 0, 0, 0.8),
+                inset 0 0 80px rgba(0, 195, 255, 0.05);
+            overflow: hidden;
+            border: 1px solid rgba(0, 247, 255, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #00c3ff 0%, #0055ff 50%, #00f7ff 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 195, 255, 0.5);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00f7ff, transparent);
+            box-shadow: 0 0 10px #00f7ff;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 247, 255, 0.8),
+                         0 0 40px rgba(0, 195, 255, 0.5);
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 0;
+        }
+
+        .sidebar {
+            padding: 30px;
+            background: rgba(10, 15, 30, 0.6);
+            border-right: 1px solid rgba(0, 247, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #00f7ff;
+            text-shadow: 0 0 10px rgba(0, 247, 255, 0.5);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid rgba(0, 247, 255, 0.3);
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: rgba(0, 20, 40, 0.6);
+            color: #00f7ff;
+            backdrop-filter: blur(5px);
+        }
+
+        input::placeholder {
+            color: rgba(0, 247, 255, 0.5);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #00f7ff;
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.4),
+                        0 0 0 3px rgba(0, 247, 255, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #00c3ff 0%, #0055ff 100%);
+            color: white;
+            border: 2px solid rgba(0, 247, 255, 0.5);
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 195, 255, 0.4);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 247, 255, 0.6),
+                        0 10px 20px rgba(0, 195, 255, 0.3);
+            border-color: #00f7ff;
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #map {
+            height: 700px;
+            width: 100%;
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 20, 40, 0.4);
+            border-radius: 8px;
+            border: 2px solid rgba(0, 247, 255, 0.3);
+            box-shadow: inset 0 0 20px rgba(0, 195, 255, 0.1);
+        }
+
+        .results h3 {
+            color: #00f7ff;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(0, 247, 255, 0.5);
+        }
+
+        .route-info {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(0, 30, 60, 0.3);
+            border-radius: 6px;
+            border-left: 4px solid #00f7ff;
+            box-shadow: 0 0 15px rgba(0, 195, 255, 0.1);
+        }
+
+        .route-info h4 {
+            color: #00c3ff;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .route-info p {
+            color: rgba(0, 247, 255, 0.8);
+            margin: 5px 0;
+        }
+
+        .legend {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 50, 100, 0.3);
+            border-radius: 6px;
+            border: 1px solid rgba(0, 247, 255, 0.2);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+
+        .legend-line {
+            width: 40px;
+            height: 4px;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        .driving-line {
+            background: #4285F4;
+        }
+
+        .walking-line {
+            background: #34A853;
+            border: 2px dashed #34A853;
+            height: 2px;
+        }
+
+        .error {
+            padding: 15px;
+            background: #f8d7da;
+            color: #721c24;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #00f7ff;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 247, 255, 0.2);
+            border-top: 4px solid #00f7ff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.4);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Last-Mile Walking Navigation</h1>
+            <p>Drive most of the way, walk the last mile</p>
+        </div>
+        
+        <div class="content">
+            <div class="sidebar">
+                <form id="routeForm">
+                    <div class="form-group">
+                        <label for="origin">Origin Address</label>
+                        <input type="text" id="origin" name="origin" 
+                               placeholder="Enter starting location" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="destination">Destination Address</label>
+                        <input type="text" id="destination" name="destination" 
+                               placeholder="Enter destination" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cutoff">Cutoff Distance (meters)</label>
+                        <input type="number" id="cutoff" name="cutoff" 
+                               value="500" min="50" step="50" required>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="calculateBtn">
+                        Calculate Routes
+                    </button>
+                </form>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Calculating routes...</p>
+                </div>
+                
+                <div id="error" class="error" style="display: none;"></div>
+                
+                <div id="results" class="results" style="display: none;">
+                    <h3>Route Information</h3>
+                    
+                    <div class="route-info">
+                        <h4>Full Driving Route</h4>
+                        <p><strong>Distance:</strong> <span id="fullDistance">-</span></p>
+                        <p><strong>Duration:</strong> <span id="fullDuration">-</span></p>
+                    </div>
+                    
+                    <div class="route-info">
+                        <h4>Hybrid Route - Walking Leg</h4>
+                        <p><strong>Walking Distance:</strong> <span id="walkDistance">-</span></p>
+                        <p><strong>Walking Duration:</strong> <span id="walkDuration">-</span></p>
+                        <p><strong>Drop-off Distance from Destination:</strong> <span id="dropoffDistance">-</span></p>
+                    </div>
+                    
+                    <div class="route-info">
+                        <h4>🎯 Optimization Info</h4>
+                        <p><strong>Strategy:</strong> <span id="optimizationType">-</span></p>
+                        <p><strong>Reason:</strong> <span id="optimizationReason">-</span></p>
+                        <p><strong>Time Advantage:</strong> <span id="timeSaved">-</span></p>
+                    </div>
+                    
+                    <div class="legend">
+                        <h4>Map Legend</h4>
+                        <div class="legend-item">
+                            <div class="legend-line driving-line"></div>
+                            <span>Driving Route (Blue)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-line walking-line"></div>
+                            <span>Walking Route (Green Dotted)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=geometry"></script>
+    <script>
+        let map;
+        let directionsService;
+        let directionsRenderer;
+        let markers = [];
+        let polylines = [];
+
+        // Initialize Google Map
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 40.7128, lng: -74.0060 }, // Default to New York
+                zoom: 13,
+                styles: [
+                    {
+                        featureType: 'poi',
+                        elementType: 'labels',
+                        stylers: [{ visibility: 'off' }]
+                    }
+                ]
+            });
+            
+            directionsService = new google.maps.DirectionsService();
+        }
+
+        // Clear previous routes and markers from map
+        function clearMap() {
+            markers.forEach(marker => marker.setMap(null));
+            polylines.forEach(polyline => polyline.setMap(null));
+            markers = [];
+            polylines = [];
+        }
+
+        // Display routes on the map
+        function displayRoutes(data) {
+            clearMap();
+            
+            const drivingPolyline = data.hybrid_route.driving_leg.polyline;
+            const walkingPolyline = data.hybrid_route.walking_leg.polyline;
+            const dropoffPoint = data.dropoff_point;
+            
+            // Decode and display the full driving route in blue
+            const drivingPath = google.maps.geometry.encoding.decodePath(drivingPolyline);
+            const drivingLine = new google.maps.Polyline({
+                path: drivingPath,
+                geodesic: true,
+                strokeColor: '#4285F4',
+                strokeOpacity: 0.8,
+                strokeWeight: 5,
+                map: map
+            });
+            polylines.push(drivingLine);
+            
+            // Decode and display the walking route in green dotted
+            if (walkingPolyline) {
+                const walkingPath = google.maps.geometry.encoding.decodePath(walkingPolyline);
+                const walkingLine = new google.maps.Polyline({
+                    path: walkingPath,
+                    geodesic: true,
+                    strokeColor: '#34A853',
+                    strokeOpacity: 0.9,
+                    strokeWeight: 5,
+                    icons: [{
+                        icon: {
+                            path: 'M 0,-1 0,1',
+                            strokeOpacity: 1,
+                            scale: 3
+                        },
+                        offset: '0',
+                        repeat: '15px'
+                    }],
+                    map: map
+                });
+                polylines.push(walkingLine);
+            }
+            
+            // Add marker for drop-off point
+            const dropoffMarker = new google.maps.Marker({
+                position: { lat: dropoffPoint.lat, lng: dropoffPoint.lng },
+                map: map,
+                title: 'Drop-off Point',
+                icon: {
+                    url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                    scaledSize: new google.maps.Size(50, 50)
+                },
+                label: {
+                    text: 'P',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '16px'
+                }
+            });
+            markers.push(dropoffMarker);
+            
+            // Add info window to drop-off marker
+            const infoWindow = new google.maps.InfoWindow({
+                content: `<strong>Drop-off Point</strong><br>Park here and walk ${data.hybrid_route.walking_leg.distance}`
+            });
+            
+            dropoffMarker.addListener('click', () => {
+                infoWindow.open(map, dropoffMarker);
+            });
+            
+            // Fit map bounds to show entire route
+            const bounds = new google.maps.LatLngBounds();
+            drivingPath.forEach(point => bounds.extend(point));
+            if (walkingPolyline) {
+                const walkingPath = google.maps.geometry.encoding.decodePath(walkingPolyline);
+                walkingPath.forEach(point => bounds.extend(point));
+            }
+            map.fitBounds(bounds);
+        }
+
+        // Handle form submission
+        document.getElementById('routeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const origin = document.getElementById('origin').value;
+            const destination = document.getElementById('destination').value;
+            const cutoff = document.getElementById('cutoff').value;
+            
+            // Show loading, hide results and errors
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('calculateBtn').disabled = true;
+            
+            try {
+                const response = await fetch('/calculate-route', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        origin: origin,
+                        destination: destination,
+                        cutoff_distance: parseFloat(cutoff)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to calculate route');
+                }
+                
+                // Check if drive-only is recommended
+                if (data.recommendation === 'drive_only') {
+                    // Display drive-only message
+                    document.getElementById('fullDistance').textContent = data.full_drive_route.distance;
+                    document.getElementById('fullDuration').textContent = data.full_drive_route.duration;
+                    document.getElementById('walkDistance').textContent = 'N/A';
+                    document.getElementById('walkDuration').textContent = 'N/A';
+                    document.getElementById('dropoffDistance').textContent = 'N/A';
+                    document.getElementById('optimizationType').textContent = 'Drive All The Way';
+                    document.getElementById('optimizationReason').textContent = data.message;
+                    document.getElementById('timeSaved').textContent = 'N/A';
+                    
+                    // Show only the driving route
+                    const drivingPath = google.maps.geometry.encoding.decodePath(data.full_drive_route.polyline);
+                    clearMap();
+                    const drivingLine = new google.maps.Polyline({
+                        path: drivingPath,
+                        geodesic: true,
+                        strokeColor: '#4285F4',
+                        strokeOpacity: 0.8,
+                        strokeWeight: 5,
+                        map: map
+                    });
+                    polylines.push(drivingLine);
+                    
+                    const bounds = new google.maps.LatLngBounds();
+                    drivingPath.forEach(point => bounds.extend(point));
+                    map.fitBounds(bounds);
+                    
+                    document.getElementById('results').style.display = 'block';
+                    return;
+                }
+                
+                // Display results for hybrid route
+                document.getElementById('fullDistance').textContent = data.full_drive_route.distance;
+                document.getElementById('fullDuration').textContent = data.full_drive_route.duration;
+                document.getElementById('walkDistance').textContent = data.hybrid_route.walking_leg.distance;
+                document.getElementById('walkDuration').textContent = data.hybrid_route.walking_leg.duration;
+                document.getElementById('dropoffDistance').textContent = data.dropoff_point.distance_from_destination;
+                
+                // Display optimization info
+                document.getElementById('optimizationType').textContent = data.dropoff_point.optimization_type || 'N/A';
+                document.getElementById('optimizationReason').textContent = data.dropoff_point.optimization_reason || 'N/A';
+                document.getElementById('timeSaved').textContent = data.dropoff_point.time_saved || 'N/A';
+                
+                document.getElementById('results').style.display = 'block';
+                
+                // Display routes on map
+                displayRoutes(data);
+                
+            } catch (error) {
+                document.getElementById('error').textContent = error.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('calculateBtn').disabled = false;
+            }
+        });
+
+        // Initialize map when page loads
+        window.onload = initMap;
+    </script>
+</body>
+</html>
