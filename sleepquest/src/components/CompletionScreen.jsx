@@ -29,8 +29,8 @@ export default function CompletionScreen() {
   }, [isAuthenticated, hasSubmittedToday, navigate]);
 
   const handleGameAccess = () => {
-    // Open local game - it reads completedDays from localStorage
-    window.open('/game.html', '_blank', 'noopener,noreferrer');
+    // Navigate to integrated game view
+    navigate('/game');
   };
 
   const isCompleted = completedDays >= 10;

@@ -1,6 +1,7 @@
 import { useQuestionnaireLogic } from '../hooks/useQuestionnaireLogic';
 import { LoadingSpinner, ProgressBar, QuestionInput, ThemeToggle } from './ui';
 import StreakDisplay from './StreakDisplay';
+import { useAuth } from '../hooks/useAuth';
 
 /**
  * QuestionnaireFlow Component
@@ -36,7 +37,7 @@ export default function QuestionnaireFlow() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 flex flex-col transition-colors duration-300 relative">
       {/* Header */}
       <QuestionnaireHeader 
         currentIndex={currentIndex}
@@ -76,11 +77,14 @@ export default function QuestionnaireFlow() {
 
 /**
  * QuestionnaireHeader Component
- * Header with back button, title, and streak display.
+ * Header with back button, title, and grouped controls (streak + buttons).
  */
 function QuestionnaireHeader({ currentIndex, completedDays, totalDays, onBack }) {
+  const { logout } = useAuth();
+  
   return (
     <header className="p-4 flex items-center justify-between">
+      {/* Left: Back button */}
       <div className="flex items-center gap-2">
         <button
           onClick={onBack}
@@ -91,15 +95,26 @@ function QuestionnaireHeader({ currentIndex, completedDays, totalDays, onBack })
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
-        <ThemeToggle />
       </div>
       
+      {/* Center: Title */}
       <div className="text-center">
         <h1 className="text-slate-900 dark:text-white font-bold transition-colors duration-300">יומן שינה</h1>
         <p className="text-slate-500 dark:text-slate-400 text-sm transition-colors duration-300">יום {completedDays + 1} מתוך {totalDays}</p>
       </div>
 
-      <StreakDisplay compact />
+      {/* Right: Grouped controls - Streak + Buttons */}
+      <div className="flex items-center gap-3">
+        <StreakDisplay compact />
+        <ThemeToggle />
+        <button
+          onClick={logout}
+          className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors font-medium"
+          aria-label="Logout"
+        >
+          התנתק
+        </button>
+      </div>
     </header>
   );
 }

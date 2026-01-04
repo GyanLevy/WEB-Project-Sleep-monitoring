@@ -1,28 +1,16 @@
 import { useAuth } from '../hooks/useAuth';
 
 export default function StreakDisplay({ compact = false }) {
-  const { streak, totalDays, completedDays, logout } = useAuth();
+  const { streak, totalDays, completedDays } = useAuth();
 
   const progressPercent = (completedDays / totalDays) * 100;
 
   if (compact) {
     return (
-      <div className="flex items-center justify-between w-full gap-4">
-        {/* Logout button on the left */}
-        <button
-          onClick={logout}
-          className="px-3 py-2 text-sm text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-slate-700 rounded-lg hover:text-red-400 hover:border-red-400 dark:hover:text-red-400 dark:hover:border-red-400 transition-all duration-200"
-          aria-label="Logout"
-        >
-          התנתק
-        </button>
-
-        {/* Stats on the right */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-colors duration-300">
-          <span className="text-2xl">🔥</span>
-          <div className="text-slate-900 dark:text-white font-bold transition-colors duration-300">{streak}</div>
-          <span className="text-slate-500 dark:text-slate-400 text-sm transition-colors duration-300">ימים</span>
-        </div>
+      <div className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-colors duration-300">
+        <span className="text-2xl">🔥</span>
+        <div className="text-slate-900 dark:text-white font-bold transition-colors duration-300">{streak}</div>
+        <span className="text-slate-500 dark:text-slate-400 text-sm transition-colors duration-300">ימים</span>
       </div>
     );
   }

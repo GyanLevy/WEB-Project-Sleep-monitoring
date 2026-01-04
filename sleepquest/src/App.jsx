@@ -5,6 +5,13 @@ import { ThemeProvider } from './context/ThemeContext';
 import LoginScreen from './components/LoginScreen';
 import QuestionnaireFlow from './components/QuestionnaireFlow';
 import CompletionScreen from './components/CompletionScreen';
+import GameView from './components/GameView';
+import DebugSeeder from './components/DebugSeeder';
+
+// CONFIGURATION
+// Set to true to show the DevTools/Smart Seeder in the UI
+const SHOW_DEV_TOOLS = false;
+
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -59,6 +66,16 @@ function AppRoutes() {
         }
       />
 
+      {/* Game Route - Protected */}
+      <Route
+        path="/game"
+        element={
+          <ProtectedRoute>
+            <GameView />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -72,6 +89,9 @@ function App() {
         <Router>
           <div className="font-sans antialiased">
             <AppRoutes />
+            
+            {/* Debug Seeder - Controlled by SHOW_DEV_TOOLS flag */}
+            {SHOW_DEV_TOOLS && <DebugSeeder />}
           </div>
         </Router>
       </AuthProvider>
@@ -80,3 +100,4 @@ function App() {
 }
 
 export default App;
+

@@ -225,6 +225,16 @@
         }
       }
 
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+        50% {
+          box-shadow: 0 0 25px rgba(0, 255, 0, 0.8);
+        }
+      }
+
       .level-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -370,7 +380,7 @@
               ⏸
             </button>
             <button
-              onclick="Game.returnToMenu()"
+              onclick="Game.showExitModal()"
               style="
                 background: rgba(20, 0, 0, 0.8);
                 border: 1px solid #f00;
@@ -609,23 +619,6 @@
               >
                 <input
                   type="checkbox"
-                  id="setting-trails"
-                  onchange="Game.toggleSetting('trails')"
-                  checked
-                  style="width: 20px; height: 20px"
-                />
-                <span>Trail Effects</span>
-              </label>
-              <label
-                style="
-                  display: flex;
-                  align-items: center;
-                  gap: 10px;
-                  cursor: pointer;
-                "
-              >
-                <input
-                  type="checkbox"
                   id="setting-shake"
                   onchange="Game.toggleSetting('shake')"
                   checked
@@ -712,6 +705,40 @@
         >
           QUIT TO MENU
         </button>
+      </div>
+
+      <!-- Exit Confirmation Modal -->
+      <div id="exit-modal" class="screen hidden">
+        <div
+          style="
+            background: rgba(0, 20, 0, 0.95);
+            border: 2px solid var(--neon-red);
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 300px;
+          "
+        >
+          <h2 style="color: var(--neon-red); margin-bottom: 20px">
+            Exit Game?
+          </h2>
+          <div style="display: flex; gap: 15px; justify-content: center">
+            <button
+              class="btn"
+              onclick="Game.confirmExit()"
+              style="border-color: #f00; color: #f00"
+            >
+              Yes
+            </button>
+            <button
+              class="btn"
+              onclick="Game.cancelExit()"
+              style="border-color: #0f0; color: #0f0"
+            >
+              No
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Game Over Screen -->
@@ -1417,33 +1444,6 @@
       }
 
       // Power-up types: 0=Shield, 1=Speed, 2=Damage, 3=Invincibility
-      // TrailParticle class for visual trail effects
-      class TrailParticle {
-        constructor() {
-          this.reset(0, 0);
-        }
-        reset(x, y, color = "#fff", size = 2) {
-          this.x = x;
-          this.y = y;
-          this.life = 1.0;
-          this.color = color;
-          this.size = size;
-          return this;
-        }
-        update(dt) {
-          this.life -= dt * 3;
-          return this.life > 0;
-        }
-        draw(ctx) {
-          Game.ctx.globalAlpha = this.life;
-          Game.ctx.fillStyle = this.color;
-          Game.ctx.beginPath();
-          Game.ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-          Game.ctx.fill();
-          Game.ctx.globalAlpha = 1.0;
-        }
-      }
-
       const POWERUP_TYPES = [
         { id: 0, name: "Shield", color: "#08f", icon: "🛡️", duration: 0 }, // Shield has charges, not duration
         { id: 1, name: "Speed", color: "#ff0", icon: "⚡", duration: 8 },
@@ -1572,23 +1572,11 @@
           this.active = true;
           this.size = isOP ? 8 : 4;
           this.damage = isOP ? 50 : 10;
-          this.trailTimer = 0;
           return this;
         }
         update(dt) {
           this.x += this.dx * CONFIG.BULLET_SPEED * dt * 60;
           this.y += this.dy * CONFIG.BULLET_SPEED * dt * 60;
-
-          // Spawn subtle bullet trail (if enabled in settings)
-          if (Game.settings.trailsEnabled) {
-            this.trailTimer -= dt;
-            if (this.trailTimer <= 0 && Game.trails) {
-              this.trailTimer = this.isOP ? 0.02 : 0.04; // OP bullets leave more frequent trails
-              let trail = Game.trails.get();
-              let color = this.isOP ? "#f0f" : "#0f0";
-              trail.reset(this.x, this.y, color, this.isOP ? 3 : 2);
-            }
-          }
 
           return (
             this.x > 0 &&
@@ -1948,17 +1936,6 @@
           // Walking animation
           if (Input.x !== 0 || Input.y !== 0) {
             this.walkPhase += dt * 8;
-
-            // Spawn subtle trail (if enabled in settings)
-            if (Game.settings.trailsEnabled) {
-              Game.trailTimer -= dt;
-              if (Game.trailTimer <= 0 && Game.trails) {
-                Game.trailTimer = 0.05; // Spawn every 50ms
-                let skinColors = this.getSkinColors();
-                let trail = Game.trails.get();
-                trail.reset(this.x, this.y + 5, skinColors.body, 4);
-              }
-            }
           }
 
           // OP Weapon Timer
@@ -2429,7 +2406,6 @@
           this.gems = new Pool(() => new XPGem(), 30);
           this.coins = new Pool(() => new Coin(), 20);
           this.magnets = new Pool(() => new Magnet(), 5);
-          this.trails = new Pool(() => new TrailParticle(), 50);
           this.powerups = new Pool(() => new PowerUp(), 10);
 
           this.resize();
@@ -2441,49 +2417,42 @@
           this.player.x = this.canvas.width / 2;
           this.player.y = this.canvas.height / 2;
 
-          // Load save
-          const save = localStorage.getItem("protocol_override_save");
-          if (save) {
-            const data = JSON.parse(save);
-            this.maxLevel = data.maxDayUnlocked || 1;
-            this.totalCoins = data.totalCoins || 0;
-            this.ownedSkins = data.ownedSkins || ["skin_default"];
-            this.equippedSkinId = data.equippedSkinId || "skin_default";
-            this.ownedWeapons = data.ownedWeapons || ["weapon_blaster"];
-            this.equippedWeaponId = data.equippedWeaponId || "weapon_blaster";
-            this.leaderboard = data.leaderboard || [];
-            this.completedChallenges = data.completedChallenges || [];
-          }
-
-          // ===== SLEEPQUEST INTEGRATION =====
-          // Sync unlocked game days with SleepQuest questionnaire progress
-          try {
-            const sleepquestData = localStorage.getItem("sleepquest_game_data");
-            if (sleepquestData) {
-              const sqData = JSON.parse(sleepquestData);
-              const completedDays = sqData.completedDays || 0;
-              // Unlock days based on questionnaire completion (completedDays + 1 because completing day 1 unlocks day 2)
-              const sleepquestMaxLevel = Math.min(completedDays + 1, 10);
-              // Use the higher value between game progress and SleepQuest progress
-              if (sleepquestMaxLevel > this.maxLevel) {
-                this.maxLevel = sleepquestMaxLevel;
-              }
+          // Load data from parent application (React/Firebase) or use defaults
+          if (window.GAME_DATA) {
+            // Injected data from parent application
+            this.maxLevel = window.GAME_DATA.currentLevel || 1;
+            this.totalCoins = window.GAME_DATA.coins || 0;
+            // Optional extended data if provided
+            this.ownedSkins = window.GAME_DATA.ownedSkins || ["skin_default"];
+            this.equippedSkinId =
+              window.GAME_DATA.equippedSkinId || "skin_default";
+            this.ownedWeapons = window.GAME_DATA.ownedWeapons || [
+              "weapon_blaster",
+            ];
+            this.equippedWeaponId =
+              window.GAME_DATA.equippedWeaponId || "weapon_blaster";
+            this.leaderboard = window.GAME_DATA.leaderboard || [];
+            this.completedChallenges =
+              window.GAME_DATA.completedChallenges || [];
+            // Settings from parent if provided
+            if (window.GAME_DATA.settings) {
+              this.settings.difficulty =
+                window.GAME_DATA.settings.difficulty || "normal";
+              this.settings.shakeEnabled =
+                window.GAME_DATA.settings.shakeEnabled !== false;
+              this.settings.tutorialSeen =
+                window.GAME_DATA.settings.tutorialSeen || false;
             }
-          } catch (e) {
-            console.log("SleepQuest data not available:", e);
-          }
-          // ===== END SLEEPQUEST INTEGRATION =====
-
-          // Load settings
-          const settingsData = localStorage.getItem(
-            "protocol_override_settings"
-          );
-          if (settingsData) {
-            const s = JSON.parse(settingsData);
-            this.settings.difficulty = s.difficulty || "normal";
-            this.settings.trailsEnabled = s.trailsEnabled !== false;
-            this.settings.shakeEnabled = s.shakeEnabled !== false;
-            this.settings.tutorialSeen = s.tutorialSeen || false;
+          } else {
+            // Standalone/testing fallback - defaults, NO localStorage
+            this.maxLevel = 1;
+            this.totalCoins = 0;
+            this.ownedSkins = ["skin_default"];
+            this.equippedSkinId = "skin_default";
+            this.ownedWeapons = ["weapon_blaster"];
+            this.equippedWeaponId = "weapon_blaster";
+            this.leaderboard = [];
+            this.completedChallenges = [];
           }
 
           this.renderMenu();
@@ -2528,8 +2497,6 @@
           this.magnets.active = [];
           this.magnetActive = false;
           this.magnetTimer = 0;
-          this.trails.active = [];
-          this.trailTimer = 0;
           this.particles.active = [];
           this.comboCount = 0;
           this.comboTimer = 0;
@@ -2704,7 +2671,6 @@
           }
 
           // Draw entities
-          this.trails.update(0, this.ctx); // Draw trails first (behind everything)
           this.particles.update(0, this.ctx); // Draw active particles
           this.enemies.update(0, this.ctx); // Just draw
           this.bullets.update(0, this.ctx); // Just draw
@@ -2912,19 +2878,12 @@
         },
 
         saveProgress() {
-          localStorage.setItem(
-            "protocol_override_save",
-            JSON.stringify({
-              maxDayUnlocked: this.maxLevel,
-              totalCoins: this.totalCoins,
-              ownedSkins: this.ownedSkins,
-              equippedSkinId: this.equippedSkinId,
-              ownedWeapons: this.ownedWeapons,
-              equippedWeaponId: this.equippedWeaponId,
-              leaderboard: this.leaderboard,
-              completedChallenges: this.completedChallenges,
-            })
-          );
+          // Notify parent application of coin update (stateless mode)
+          if (typeof window.onCoinUpdate === "function") {
+            window.onCoinUpdate(this.totalCoins);
+          }
+          // Note: Other state (skins, weapons) kept in-memory for session
+          // Parent app can access Game.totalCoins, Game.ownedSkins, etc if needed
         },
 
         gameOver() {
@@ -3041,9 +3000,8 @@
           this.state = "OVER";
           this.vibrate([30, 50, 30]); // Victory haptic pattern
 
-          // NOTE: Levels are ONLY unlocked by completing the SleepQuest questionnaire,
-          // NOT by winning game stages. maxLevel is set from sleepquest_game_data localStorage.
-          // Completing this game stage does NOT unlock the next day's stage.
+          // Level unlocking is now controlled by parent app (stateless mode)
+          // Game does NOT auto-unlock next level
 
           // Check daily challenge completion
           let challengeBonus = 0;
@@ -3113,12 +3071,7 @@
 
           let msg = "DAY " + this.level + " COMPLETE!";
           msg += "\n\n📊 SCORE: " + score;
-          if (this.level < 10) {
-            msg +=
-              "\n\n📝 Complete tomorrow's questionnaire to unlock DAY " +
-              (this.level + 1) +
-              "!";
-          } else if (this.level === 10) {
+          if (this.level === 10) {
             msg += "\n🏆 ALL DAYS COMPLETE 🏆";
           }
           if (challengeCompleted) {
@@ -3144,9 +3097,32 @@
 
           $("game-over-screen").classList.add("hidden");
           $("pause-screen").classList.add("hidden");
+          $("exit-modal").classList.add("hidden");
           $("game-ui").classList.add("hidden");
           $("main-menu").classList.remove("hidden");
           this.renderMenu();
+        },
+
+        // Exit Confirmation Modal Functions
+        showExitModal() {
+          this.previousState = this.state;
+          this.state = "EXIT_CONFIRM";
+          $("exit-modal").classList.remove("hidden");
+        },
+
+        confirmExit() {
+          $("exit-modal").classList.add("hidden");
+          if (typeof window.onGameExit === "function") {
+            window.onGameExit();
+          } else {
+            // Fallback: return to main menu
+            this.returnToMenu();
+          }
+        },
+
+        cancelExit() {
+          $("exit-modal").classList.add("hidden");
+          this.state = this.previousState || "MENU";
         },
 
         pauseGame() {
@@ -3184,22 +3160,34 @@
             let btn = document.createElement("button");
             btn.className = "btn";
 
-            if (i > this.maxLevel) {
+            if (i < this.maxLevel) {
+              // COMPLETED: Green checkmark, disabled
+              btn.disabled = true;
+              btn.innerText = "✓ DAY " + i;
+              btn.style.background = "rgba(0, 100, 0, 0.3)";
+              btn.style.borderColor = "#0f0";
+              btn.style.color = "#0f0";
+              btn.style.pointerEvents = "none";
+            } else if (i === this.maxLevel) {
+              // ACTIVE: Pulsing, clickable
+              const levelNum = i;
+              const levelData = CONFIG.LEVELS[i - 1];
+              btn.innerText = "▶ DAY " + i + "\n" + levelData.theme;
+              btn.style.borderColor = levelData.neon;
+              btn.style.color = levelData.neon;
+              btn.style.fontSize = "14px";
+              btn.style.whiteSpace = "pre-line";
+              btn.style.animation = "pulse 1.5s infinite";
+              btn.addEventListener("click", () => {
+                Game.startLevel(levelNum);
+              });
+            } else {
+              // LOCKED: Padlock, disabled
               btn.disabled = true;
               btn.innerText = "🔒 DAY " + i;
               btn.style.opacity = 0.5;
               btn.style.borderColor = "#444";
-            } else {
-              const levelNum = i;
-              const levelData = CONFIG.LEVELS[i - 1];
-              btn.innerText = "DAY " + i + "\n" + levelData.theme;
-              btn.style.borderColor = levelData.neon;
-              btn.style.color = levelData.neon;
-              btn.style.fontSize = "14px";
-              btn.style.whiteSpace = "pre-line"; // Capture level in closure
-              btn.addEventListener("click", () => {
-                Game.startLevel(levelNum);
-              });
+              btn.style.color = "#444";
             }
             grid.appendChild(btn);
           }
@@ -3532,10 +3520,8 @@
         },
 
         saveSettings() {
-          localStorage.setItem(
-            "protocol_override_settings",
-            JSON.stringify(this.settings)
-          );
+          // Settings are session-only in stateless mode
+          // Parent app can provide settings via GAME_DATA on next init
         },
 
         updateSettingsUI() {
@@ -3552,7 +3538,6 @@
           });
 
           // Update checkboxes
-          $("setting-trails").checked = this.settings.trailsEnabled;
           $("setting-shake").checked = this.settings.shakeEnabled;
         },
 
@@ -3568,9 +3553,7 @@
         },
 
         toggleSetting(setting) {
-          if (setting === "trails") {
-            this.settings.trailsEnabled = !this.settings.trailsEnabled;
-          } else if (setting === "shake") {
+          if (setting === "shake") {
             this.settings.shakeEnabled = !this.settings.shakeEnabled;
           }
           this.saveSettings();

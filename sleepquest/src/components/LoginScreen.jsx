@@ -58,8 +58,8 @@ export default function LoginScreen() {
 
       {/* Main card */}
       <div className="relative z-10 w-full max-w-md">
-        {/* Theme Toggle - top of the card area */}
-        <div className="absolute top-0 left-0 -translate-y-full pb-4">
+        {/* Theme Toggle - above the card */}
+        <div className="flex justify-start mb-4">
           <ThemeToggle />
         </div>
 
