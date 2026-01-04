@@ -11,7 +11,7 @@ import StreakDisplay from './StreakDisplay';
  * Shows celebration animation, stats, and game access.
  */
 export default function CompletionScreen() {
-  const { token, streak, completedDays, isAuthenticated, hasSubmittedToday } = useAuth();
+  const { token, streak, completedDays, isAuthenticated, hasSubmittedToday, logout } = useAuth();
   const navigate = useNavigate();
   const showConfetti = useConfetti(5000);
 
@@ -31,6 +31,11 @@ export default function CompletionScreen() {
   const handleGameAccess = () => {
     // Navigate to integrated game view
     navigate('/game');
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
   const isCompleted = completedDays >= 10;
@@ -69,7 +74,10 @@ export default function CompletionScreen() {
         {/* Game Access Button */}
         <GameAccessButton onClick={handleGameAccess} />
 
-        <p className="text-slate-500 dark:text-slate-500 text-sm transition-colors duration-300">
+        {/* Logout Button */}
+        <LogoutButton onClick={handleLogout} />
+
+        <p className="text-slate-500 dark:text-slate-500 text-sm transition-colors duration-300 mt-4">
           שחק את משחק הפרס היומי שלך וצבור נקודות בונוס!
         </p>
 
@@ -149,6 +157,24 @@ function GameAccessButton({ onClick }) {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       כניסה למשחק היומי
+    </button>
+  );
+}
+
+/**
+ * LogoutButton Component
+ * Secondary button for logging out and finishing the day.
+ */
+function LogoutButton({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full py-4 px-6 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold text-base rounded-xl transition-all duration-300 mb-4 flex items-center justify-center gap-3"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
+      סיום והתנתקות
     </button>
   );
 }

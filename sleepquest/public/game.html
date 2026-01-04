@@ -469,6 +469,13 @@
           >
             ⛶
           </button>
+          <button
+            class="btn"
+            onclick="Game.exitToWrapper()"
+            style="padding: 15px 20px; border-color: #f00; color: #f00"
+          >
+            🚪 EXIT
+          </button>
         </div>
         <div style="margin-top: 10px; font-size: 14px; color: #ff0">
           💰 <span id="menu-coins">0</span> COINS
@@ -2419,22 +2426,68 @@
 
           // Load data from parent application (React/Firebase) or use defaults
           if (window.GAME_DATA) {
-            // Injected data from parent application
-            this.maxLevel = window.GAME_DATA.currentLevel || 1;
-            this.totalCoins = window.GAME_DATA.coins || 0;
-            // Optional extended data if provided
-            this.ownedSkins = window.GAME_DATA.ownedSkins || ["skin_default"];
+            console.log("Loading external game data...", window.GAME_DATA);
+
+            // 1. Load Coins
+            if (typeof window.GAME_DATA.coins !== "undefined") {
+              this.totalCoins = window.GAME_DATA.coins;
+            }
+
+            // 2. Load Level
+            if (window.GAME_DATA.currentLevel) {
+              this.maxLevel = window.GAME_DATA.currentLevel;
+            }
+
+            // 3. Parse and Load Inventory
+            // The wrapper might send 'ownedItems' (flat list) or separate arrays. Handle both.
+            const rawInventory =
+              window.GAME_DATA.ownedItems || window.GAME_DATA.inventory || [];
+
+            if (rawInventory.length > 0) {
+              // Filter Skins from flat inventory
+              this.ownedSkins = rawInventory.filter((id) =>
+                id.startsWith("skin_")
+              );
+              // Ensure default skin is always present
+              if (!this.ownedSkins.includes("skin_default")) {
+                this.ownedSkins.unshift("skin_default");
+              }
+
+              // Filter Weapons from flat inventory
+              this.ownedWeapons = rawInventory.filter((id) =>
+                id.startsWith("weapon_")
+              );
+              // Ensure default weapon is always present
+              if (!this.ownedWeapons.includes("weapon_blaster")) {
+                this.ownedWeapons.unshift("weapon_blaster");
+              }
+            } else {
+              // No flat inventory provided, check for separate arrays
+              this.ownedSkins = window.GAME_DATA.ownedSkins || ["skin_default"];
+              if (!this.ownedSkins.includes("skin_default")) {
+                this.ownedSkins.unshift("skin_default");
+              }
+
+              this.ownedWeapons = window.GAME_DATA.ownedWeapons || [
+                "weapon_blaster",
+              ];
+              if (!this.ownedWeapons.includes("weapon_blaster")) {
+                this.ownedWeapons.unshift("weapon_blaster");
+              }
+            }
+
+            // 4. Load equipped items
             this.equippedSkinId =
               window.GAME_DATA.equippedSkinId || "skin_default";
-            this.ownedWeapons = window.GAME_DATA.ownedWeapons || [
-              "weapon_blaster",
-            ];
             this.equippedWeaponId =
               window.GAME_DATA.equippedWeaponId || "weapon_blaster";
+
+            // 5. Load other data
             this.leaderboard = window.GAME_DATA.leaderboard || [];
             this.completedChallenges =
               window.GAME_DATA.completedChallenges || [];
-            // Settings from parent if provided
+
+            // 6. Settings from parent if provided
             if (window.GAME_DATA.settings) {
               this.settings.difficulty =
                 window.GAME_DATA.settings.difficulty || "normal";
@@ -2443,6 +2496,13 @@
               this.settings.tutorialSeen =
                 window.GAME_DATA.settings.tutorialSeen || false;
             }
+
+            console.log("Data loaded successfully:", {
+              coins: this.totalCoins,
+              level: this.maxLevel,
+              skins: this.ownedSkins,
+              weapons: this.ownedWeapons,
+            });
           } else {
             // Standalone/testing fallback - defaults, NO localStorage
             this.maxLevel = 1;
@@ -3731,6 +3791,91 @@
             Math.min(100, (this.xp / this.maxXp) * 100) + "%";
           $("coin-display").innerText = "💰 " + this.totalCoins;
         },
+
+        // Exit to wrapper app
+        exitToWrapper() {
+          if (typeof window.onGameExit === "function") {
+            console.log("🚪 Exit button clicked, calling wrapper...");
+            window.onGameExit();
+          } else {
+            console.warn("⚠️ No exit handler defined (window.onGameExit)");
+            // In standalone mode, just show a message
+            this.createFloater(
+              "Exit not available",
+              window.innerWidth / 2,
+              window.innerHeight / 2
+            );
+          }
+        },
+      };
+
+      /**
+       * EXTERNAL SYNC FUNCTION
+       * Allows the wrapper app to update game state after load.
+       */
+      window.updateGameFromReact = function (data) {
+        console.log("🔄 Force-updating Game State with:", data);
+
+        // Safety check: ensure Game object exists
+        if (typeof Game === "undefined") {
+          console.error("❌ Game object not found, cannot update.");
+          return;
+        }
+
+        // 1. Update Coins
+        if (data.coins !== undefined) {
+          Game.totalCoins = data.coins;
+        }
+
+        // 2. Update Level
+        if (data.currentLevel) {
+          Game.maxLevel = data.currentLevel;
+        }
+
+        // 3. Update Inventory (Split flat list into specific arrays)
+        if (data.ownedItems && Array.isArray(data.ownedItems)) {
+          // Filter Skins
+          Game.ownedSkins = data.ownedItems.filter((id) =>
+            id.startsWith("skin_")
+          );
+          // Always ensure default skin exists
+          if (!Game.ownedSkins.includes("skin_default")) {
+            Game.ownedSkins.unshift("skin_default");
+          }
+
+          // Filter Weapons
+          Game.ownedWeapons = data.ownedItems.filter((id) =>
+            id.startsWith("weapon_")
+          );
+          // Always ensure default weapon exists
+          if (!Game.ownedWeapons.includes("weapon_blaster")) {
+            Game.ownedWeapons.unshift("weapon_blaster");
+          }
+        }
+
+        // 4. Update equipped items if provided
+        if (data.equippedSkinId) {
+          Game.equippedSkinId = data.equippedSkinId;
+        }
+        if (data.equippedWeaponId) {
+          Game.equippedWeaponId = data.equippedWeaponId;
+        }
+
+        console.log("✅ Game State Updated Successfully:", {
+          coins: Game.totalCoins,
+          level: Game.maxLevel,
+          skins: Game.ownedSkins,
+          weapons: Game.ownedWeapons,
+        });
+
+        // Trigger a re-render of the menu to show updated data
+        if (Game.state === "MENU" && typeof Game.renderMenu === "function") {
+          Game.renderMenu();
+        }
+        // Also update shop if open
+        if (Game.state === "SHOP" && typeof Game.renderShop === "function") {
+          Game.renderShop();
+        }
       };
 
       // Start

@@ -77,11 +77,6 @@ export default function DebugSeeder() {
   };
 
   /**
-   * Get today's date
-   */
-  const getToday = () => getDaysAgo(0);
-
-  /**
    * Generate inventory based on coins (wealth)
    * Always includes defaults: skin_default, weapon_blaster
    */
@@ -127,46 +122,40 @@ export default function DebugSeeder() {
   };
 
   /**
-   * Generate student data based on profile type
+   * Generate student data with realistic variance
+   * ~60% Active (submitted yesterday), ~40% Lapsed (broken streak)
+   * NO submissions on today (2026-01-04)
    */
   const generateStudentProfile = (type, token) => {
-    const today = getToday();
+    // Determine if user is active or lapsed
+    const isActive = Math.random() < 0.6; // 60% active
     
-    if (type === 'graduate') {
-      // 33% Graduates: Completed all 10 days
-      const completedDays = TOTAL_DAYS;
-      const coins = faker.number.int({ min: 500, max: 800 });
+    if (isActive) {
+      // ACTIVE USER: Submitted yesterday (2026-01-03)
+      const completedDays = faker.number.int({ min: 3, max: 9 });
+      const streak = faker.number.int({ min: 1, max: completedDays }); // Streak can be less than total completed
+      const coins = faker.number.int({ min: 150, max: 600 });
+      
       return {
         token,
         completedDays,
         coins,
-        streak: faker.number.int({ min: 8, max: 10 }),
-        lastSubmissionDate: today,
-        inventory: generateInventory(coins)
-      };
-    } else if (type === 'active') {
-      // 33% Active Players: 4-7 days completed
-      const completedDays = faker.number.int({ min: 4, max: 7 });
-      const coins = faker.number.int({ min: 150, max: 400 });
-      const lastSubmission = faker.helpers.arrayElement([today, getDaysAgo(1)]);
-      return {
-        token,
-        completedDays,
-        coins,
-        streak: faker.number.int({ min: 2, max: completedDays }),
-        lastSubmissionDate: lastSubmission,
+        streak,
+        lastSubmissionDate: getDaysAgo(1), // Yesterday
         inventory: generateInventory(coins)
       };
     } else {
-      // 33% Newbies: 0-2 days completed
-      const completedDays = faker.number.int({ min: 0, max: 2 });
-      const coins = faker.number.int({ min: 0, max: 50 });
+      // LAPSED USER: Submitted 2-7 days ago, streak BROKEN
+      const completedDays = faker.number.int({ min: 2, max: 8 });
+      const daysAgo = faker.number.int({ min: 2, max: 7 }); // 2-7 days ago
+      const coins = faker.number.int({ min: 50, max: 300 });
+      
       return {
         token,
         completedDays,
         coins,
-        streak: completedDays,
-        lastSubmissionDate: completedDays > 0 ? getDaysAgo(faker.number.int({ min: 0, max: 2 })) : null,
+        streak: 0, // BROKEN - they missed yesterday
+        lastSubmissionDate: getDaysAgo(daysAgo),
         inventory: generateInventory(coins)
       };
     }
@@ -227,28 +216,38 @@ export default function DebugSeeder() {
     }
 
     // Step 5: Create student documents and submissions in the SAME batch
-    for (const profile of studentProfiles) {
-      const studentRef = doc(db, 'students', profile.token);
+    for (const studentData of studentProfiles) {
+      const studentRef = doc(db, 'students', studentData.token);      // Create student document (without totalDays - app defaults to 10)
       batch.set(studentRef, {
-        classId: classId,
-        coins: profile.coins,
-        streak: profile.streak,
-        inventory: profile.inventory,
-        lastSubmissionDate: profile.lastSubmissionDate,
-        totalDays: TOTAL_DAYS,
+        classId,
+        coins: studentData.coins,
+        streak: studentData.streak,
+        completedDays: studentData.completedDays,
+        inventory: studentData.inventory,
+        lastSubmissionDate: studentData.lastSubmissionDate,
         createdAt: serverTimestamp()
       });
 
-      // Generate submission history
-      if (profile.completedDays > 0) {
-        for (let day = 0; day < profile.completedDays; day++) {
-          const submissionDate = getDaysAgo(profile.completedDays - day - 1);
-          const submissionRef = doc(db, 'students', profile.token, 'submissions', submissionDate);
+      // Generate submission history ending on their last submission date
+      if (studentData.completedDays > 0 && studentData.lastSubmissionDate) {
+        const submissionDates = [];
+        const lastDate = new Date(studentData.lastSubmissionDate);
+        
+        // Generate dates going backwards from last submission
+        for (let i = 0; i < studentData.completedDays; i++) {
+          const submissionDate = new Date(lastDate);
+          submissionDate.setDate(submissionDate.getDate() - i);
+          submissionDates.push(submissionDate.toISOString().split('T')[0]);
+        }
+
+        // Create submission documents
+        submissionDates.forEach((dateStr) => {
+          const submissionRef = doc(db, `students/${studentData.token}/submissions/${dateStr}`);
           batch.set(submissionRef, {
             answers: generateFakeAnswers(),
             submittedAt: serverTimestamp()
           });
-        }
+        });
       }
     }
 
