@@ -1,64 +1,71 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { db } from '../firebase';
-import { 
-  doc, 
-  writeBatch, 
-  increment, 
-  serverTimestamp 
-} from 'firebase/firestore';
-import questionsData from '../data/questions.json';
+import { useAuth } from './useAuth';
 
-// Get today's date in YYYY-MM-DD format
-const getTodayDate = () => {
-  return new Date().toISOString().split('T')[0];
-};
 
-// Get yesterday's date in YYYY-MM-DD format
-const getYesterdayDate = () => {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  return yesterday.toISOString().split('T')[0];
-};
 
 /**
  * useQuestionnaireLogic Hook
  * Encapsulates all questionnaire state management, navigation, and submission logic.
- * Handles Firestore batch writes for diary submissions.
+ * Uses ONLY Firebase questions (teacher-added + approved by admin)
+ * No static JSON file needed!
  */
 export function useQuestionnaireLogic() {
-  const { 
-    token, 
-    hasSubmittedToday, 
-    canSubmitToday, 
-    completedDays, 
-    totalDays, 
-    lastSubmissionDate, 
-    streak,
+  const {
+    hasSubmittedToday,
+    canSubmitToday,
+    submitQuestionnaire,
+    completedDays,
+    totalDays,
     coins,
-    updateAfterSubmission 
+    getQuestions                       // ← Only source of questions
   } = useAuth();
+
   const navigate = useNavigate();
-  
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [direction, setDirection] = useState('next');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [questions, setQuestions] = useState([]);          // ← Firebase questions only
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Filter questions based on conditional logic
-  const questions = useMemo(() => {
-    return questionsData.filter(q => {
-      // If question has a condition, check if it should be shown
-      if (q.conditional_on) {
-        const dependsOnAnswer = answers[q.conditional_on];
-        if (!dependsOnAnswer) return false;
-        return q.condition_value.includes(dependsOnAnswer);
+  // Load questions from Firebase ONLY
+  useEffect(() => {
+    const loadQuestions = async () => {
+      try {
+        console.log('📚 Loading questions from Firebase...');
+        setIsLoadingQuestions(true);
+        setError(null);
+
+        const firebaseQuestions = await getQuestions();
+
+        if (!firebaseQuestions || firebaseQuestions.length === 0) {
+          console.warn('⚠️ No questions found in Firebase');
+          setQuestions([]);
+          setError('אין שאלות זמינות כרגע. אנא חכה שהמורה שלך יוסיף שאלות.');
+          setIsLoadingQuestions(false);
+          return;
+        }
+
+        console.log(`✅ Loaded ${firebaseQuestions.length} questions from Firebase:`, firebaseQuestions);
+        setQuestions(firebaseQuestions);
+        setError(null);
+      } catch (err) {
+        console.error('❌ Error loading questions from Firebase:', err);
+        setError('שגיאה בטעינת השאלות. אנא נסו שוב.');
+        setQuestions([]);
+      } finally {
+        setIsLoadingQuestions(false);
       }
-      return true;
-    });
-  }, [answers]);
+    };
+
+    if (getQuestions) {
+      loadQuestions();
+    }
+  }, [getQuestions]);
 
   // Check if already submitted today - redirect in effect
   useEffect(() => {
@@ -71,84 +78,69 @@ export function useQuestionnaireLogic() {
   const currentQuestion = questions[currentIndex];
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   const isLastQuestion = currentIndex === questions.length - 1;
-  const canProceed = !!answers[currentQuestion?.id];
+  const canProceed = currentQuestion && !!answers[currentQuestion?.id];
 
   // Handle answer selection
   const handleAnswer = useCallback((value) => {
+    if (!currentQuestion) return;
+
     setAnswers(prev => ({
       ...prev,
       [currentQuestion.id]: value
     }));
   }, [currentQuestion]);
 
-  // Submit diary using Firestore batch write
+  // Submit questionnaire using AuthContext's submitQuestionnaire function
   const submitDiary = useCallback(async () => {
     if (!canSubmitToday()) {
-      return { success: false, error: 'כבר מילאת את היומן להיום' };
+      return {
+        success: false,
+        error: 'כבר מילאת את היומן להיום'
+      };
     }
-
-    const today = getTodayDate();
-    const yesterday = getYesterdayDate();
-
-    // Calculate new streak
-    // If lastSubmissionDate was yesterday -> streak + 1
-    // Otherwise -> reset to 1
-    let newStreak = 1;
-    if (lastSubmissionDate === yesterday) {
-      newStreak = streak + 1;
-    }
-
-    // Calculate new coins (increment by 10)
-    const newCoins = coins + 10;
 
     try {
-      // Create a batch write for atomic updates
-      const batch = writeBatch(db);
+      console.log('📝 Submitting questionnaire with answers:', answers);
 
-      // 1. Set doc in submissions subcollection: students/{token}/submissions/{todayDate}
-      const submissionRef = doc(db, 'students', token, 'submissions', today);
-      batch.set(submissionRef, {
-        answers: answers,
-        submittedAt: serverTimestamp()
-      });
+      // Use the AuthContext's submitQuestionnaire function
+      // It handles all Firestore operations and state updates
+      const result = await submitQuestionnaire(answers);
 
-      // 2. Update the parent student document: students/{token}
-      const studentRef = doc(db, 'students', token);
-      batch.update(studentRef, {
-        lastSubmissionDate: today,
-        coins: increment(10),
-        streak: newStreak
-      });
-
-      // Commit the batch
-      await batch.commit();
-
-      // Update local state via AuthContext
-      updateAfterSubmission({
-        lastSubmissionDate: today,
-        streak: newStreak,
-        coins: newCoins,
-        newResponse: {
-          date: today,
-          submittedAt: new Date().toISOString(),
-          answers: answers
-        }
-      });
-
-      return { success: true, streak: newStreak, coins: newCoins };
+      if (result.success) {
+        console.log('✅ Submission successful!', result);
+        return {
+          success: true,
+          streak: result.newStreak,
+          coins: coins + 10
+        };
+      } else {
+        console.error('❌ Submission failed:', result.error);
+        return {
+          success: false,
+          error: result.error || 'שגיאה בשמירת היומן. נסה שוב.'
+        };
+      }
     } catch (error) {
-      console.error('Submit error:', error);
-      return { success: false, error: 'שגיאה בשמירת היומן. נסה שוב.' };
+      console.error('❌ Submit error:', error);
+      return {
+        success: false,
+        error: 'שגיאה בשמירת היומן. נסה שוב.'
+      };
     }
-  }, [token, answers, canSubmitToday, lastSubmissionDate, streak, coins, updateAfterSubmission]);
+  }, [answers, canSubmitToday, submitQuestionnaire, coins]);
 
   // Handle form submission
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
+    console.log('🔐 Starting submission process...');
+
     const result = await submitDiary();
+
     if (result.success) {
+      console.log('✅ Navigating to /complete');
       navigate('/complete');
     } else {
+      console.error('❌ Submission failed:', result.error);
       alert(result.error);
       setIsSubmitting(false);
     }
@@ -157,7 +149,7 @@ export function useQuestionnaireLogic() {
   // Handle navigation to next question
   const handleNext = useCallback(() => {
     if (!canProceed) return;
-    
+
     if (isLastQuestion) {
       handleSubmit();
     } else {
@@ -189,7 +181,9 @@ export function useQuestionnaireLogic() {
     isTransitioning,
     direction,
     isSubmitting,
-    
+    isLoadingQuestions,
+    error,                          // ← Error state
+
     // Derived values
     questions,
     progress,
@@ -197,7 +191,7 @@ export function useQuestionnaireLogic() {
     canProceed,
     completedDays,
     totalDays,
-    
+
     // Actions
     handleAnswer,
     handleNext,

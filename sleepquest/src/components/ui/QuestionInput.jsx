@@ -1,7 +1,7 @@
 /**
  * QuestionInput Component
  * Renders different input types based on question configuration.
- * Supports: time, number, radio, and text inputs.
+ * Supports: time, number, radio, checkbox, and text inputs.
  */
 export default function QuestionInput({ question, value, onChange }) {
   switch (question.type) {
@@ -13,6 +13,10 @@ export default function QuestionInput({ question, value, onChange }) {
 
     case 'radio':
       return <RadioInput question={question} value={value} onChange={onChange} />;
+
+    case 'checkbox':
+      // Checkbox is yes/no with automatic options
+      return <CheckboxInput value={value} onChange={onChange} />;
 
     default:
       return <TextInput value={value} onChange={onChange} />;
@@ -113,6 +117,46 @@ function RadioInput({ question, value, onChange }) {
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// Checkbox (Yes/No) Component - NEW!
+function CheckboxInput({ value, onChange }) {
+  const options = ['כן', 'לא'];
+  const emojis = ['✅', '❌'];
+
+  return (
+    <div className="space-y-3">
+      {options.map((option, index) => (
+        <button
+          key={option}
+          onClick={() => onChange(option)}
+          className={`w-full p-5 rounded-xl border-2 text-right transition-all duration-200 ${
+            value === option
+              ? 'bg-indigo-50 dark:bg-indigo-500/20 border-indigo-500 text-slate-900 dark:text-white'
+              : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
+          }`}
+        >
+          <div className="flex items-center gap-4">
+            <div
+              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                value === option
+                  ? 'border-indigo-500 bg-indigo-500'
+                  : 'border-slate-300 dark:border-slate-600'
+              }`}
+            >
+              {value === option && (
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
+            </div>
+            <span className="text-xl">{emojis[index]}</span>
+            <span className="text-lg flex-1">{option}</span>
+          </div>
+        </button>
+      ))}
     </div>
   );
 }

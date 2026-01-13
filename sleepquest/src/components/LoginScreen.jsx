@@ -6,6 +6,7 @@ import { LoadingSpinner, ThemeToggle } from './ui';
 /**
  * LoginScreen Component
  * Entry point for student authentication using a 6-digit token.
+ * Also includes buttons for teacher and admin access.
  */
 export default function LoginScreen() {
   const [token, setToken] = useState('');
@@ -58,8 +59,8 @@ export default function LoginScreen() {
 
       {/* Main card */}
       <div className="relative z-10 w-full max-w-md">
-        {/* Theme Toggle - above the card */}
-        <div className="flex justify-start mb-4">
+        {/* Theme Toggle - top of the card area */}
+        <div className="absolute top-0 left-0 -translate-y-full pb-4">
           <ThemeToggle />
         </div>
 
@@ -79,7 +80,7 @@ export default function LoginScreen() {
           {/* Divider */}
           <Divider />
 
-          {/* Teacher/Admin Placeholders */}
+          {/* Teacher/Admin Access Buttons */}
           <AlternativeAccessButtons />
         </div>
 
@@ -140,7 +141,7 @@ function LoginForm({ token, error, isLoading, onTokenChange, onSubmit }) {
           </div>
         </div>
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 transition-colors duration-300">
-          קוד הגישה בן 6 הספרות ניתן לך על ידי המורה שלך
+          קוד הגישה בן 6 הספרות נתון לך על ידי המורה שלך
         </p>
       </div>
 
@@ -192,24 +193,29 @@ function Divider() {
 
 /**
  * AlternativeAccessButtons Component
- * Placeholder buttons for teacher/admin access.
+ * Teacher and admin access buttons with actual navigation.
  */
 function AlternativeAccessButtons() {
+  const navigate = useNavigate();
+
   return (
     <div className="grid grid-cols-2 gap-4">
+      {/* Teacher Login Button */}
       <button
         type="button"
-        className="py-3 px-4 bg-slate-100 dark:bg-slate-700/30 hover:bg-slate-200 dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 text-sm rounded-xl transition-all duration-200"
-        onClick={() => alert('כניסת מורים תהיה זמינה בקרוב')}
+        onClick={() => navigate('/teacher/login')}
+        className="py-3 px-4 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-500/20 dark:to-emerald-500/20 hover:from-green-200 hover:to-emerald-200 dark:hover:from-green-500/30 dark:hover:to-emerald-500/30 border border-green-200 dark:border-green-500/30 text-green-600 dark:text-green-400 text-sm rounded-xl transition-all duration-200 font-medium"
       >
-        כניסת מורה
+        👨‍🏫 כניסת מורה
       </button>
+
+      {/* Admin Login Button */}
       <button
         type="button"
-        className="py-3 px-4 bg-slate-100 dark:bg-slate-700/30 hover:bg-slate-200 dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 text-sm rounded-xl transition-all duration-200"
-        onClick={() => alert('כניסת מנהלים תהיה זמינה בקרוב')}
+        onClick={() => navigate('/admin/login')}
+        className="py-3 px-4 bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-500/20 dark:to-orange-500/20 hover:from-red-200 hover:to-orange-200 dark:hover:from-red-500/30 dark:hover:to-orange-500/30 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 text-sm rounded-xl transition-all duration-200 font-medium"
       >
-        כניסת מנהל
+        🔑 כניסת מנהל
       </button>
     </div>
   );
@@ -226,7 +232,7 @@ function PrivacyNotice() {
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
-        <span>הנתונים שלך אנונימיים לחלוטין • לא נאסף מידע אישי</span>
+        <span>הנתונים שלך אנונימיים ומוגנים • לא נאסף מידע אישי</span>
       </div>
     </div>
   );
