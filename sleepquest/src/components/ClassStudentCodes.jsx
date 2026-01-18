@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase";
-import { formatCodesForDisplay } from "../utils/generateStudentCodes";
 
 export default function ClassStudentCodes({ teacherState }) {
   const [allCodes, setAllCodes] = useState([]);
@@ -13,11 +12,51 @@ export default function ClassStudentCodes({ teacherState }) {
   const [copiedCode, setCopiedCode] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    loadTeacherData();
+  const checkCodeUsage = useCallback(async (codes) => {
+    try {
+      const unused = [];
+      const used = [];
+
+      // Get all students in this teacher's class
+      const studentsRef = collection(db, "students");
+      const classStudentsSnapshot = await getDocs(
+        query(studentsRef, where("classId", "==", teacherState?.classId)),
+      );
+
+      // Check each student's lastSubmissionDate
+      classStudentsSnapshot.docs.forEach((doc) => {
+        const studentData = doc.data();
+        const code = doc.id;
+
+        // If code is in our codes list
+        if (codes.includes(code)) {
+          // Check if lastSubmissionDate is null
+          if (!studentData.lastSubmissionDate) {
+            unused.push(code);
+          } else {
+            used.push(code);
+          }
+        }
+      });
+
+      codes.forEach((code) => {
+        if (!unused.includes(code) && !used.includes(code)) {
+          unused.push(code);
+        }
+      });
+
+      setUnusedCodes(unused);
+      setUsedCodes(used);
+      console.log(
+        `✅ ${unused.length} unused codes, ${used.length} used codes`,
+      );
+    } catch (err) {
+      console.error("Error checking code usage:", err);
+      setError(`❌ Failed to check code usage: ${err.message}`);
+    }
   }, [teacherState]);
 
-  const loadTeacherData = async () => {
+  const loadTeacherData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError("");
@@ -59,51 +98,12 @@ export default function ClassStudentCodes({ teacherState }) {
       setError(`❌ Failed to load data: ${err.message}`);
       setIsLoading(false);
     }
-  };
+  }, [teacherState, checkCodeUsage]);
 
-  const checkCodeUsage = async (codes) => {
-    try {
-      const unused = [];
-      const used = [];
-
-      // Get all students in this teacher's class
-      const studentsRef = collection(db, "students");
-      const classStudentsSnapshot = await getDocs(
-        query(studentsRef, where("classId", "==", teacherState.classId)),
-      );
-
-      // Check each student's lastSubmissionDate
-      classStudentsSnapshot.docs.forEach((doc) => {
-        const studentData = doc.data();
-        const code = doc.id;
-
-        // If code is in our codes list
-        if (codes.includes(code)) {
-          // Check if lastSubmissionDate is null
-          if (!studentData.lastSubmissionDate) {
-            unused.push(code);
-          } else {
-            used.push(code);
-          }
-        }
-      });
-
-      codes.forEach((code) => {
-        if (!unused.includes(code) && !used.includes(code)) {
-          unused.push(code);
-        }
-      });
-
-      setUnusedCodes(unused);
-      setUsedCodes(used);
-      console.log(
-        `✅ ${unused.length} unused codes, ${used.length} used codes`,
-      );
-    } catch (err) {
-      console.error("Error checking code usage:", err);
-      setError(`❌ Failed to check code usage: ${err.message}`);
-    }
-  };
+  useEffect(() => {
+    loadTeacherData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teacherState]);
 
   // Copy single code
   const handleCopyCode = (code) => {

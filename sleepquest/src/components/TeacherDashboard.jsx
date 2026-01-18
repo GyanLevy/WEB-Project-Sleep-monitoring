@@ -22,6 +22,12 @@ export default function TeacherDashboard() {
       </div>
     );
   }
+  // Redirect if not authenticated
+  if (!teacherState) {
+    navigate("/teacher/login");
+    return null;
+  }
+
   if (currentView === "codes") {
     return (
       <div className="...">
@@ -37,11 +43,7 @@ export default function TeacherDashboard() {
       </div>
     );
   }
-  // Redirect if not authenticated
-  if (!teacherState) {
-    navigate("/teacher/login");
-    return null;
-  }
+
 
   const handleLogout = async () => {
     await logout();
@@ -94,7 +96,6 @@ function TeacherHeader({
   onLogout,
   onRefresh,
   setCurrentView,
-  currentView,
 }) {
   return (
     <header className="bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700/50 sticky top-0 z-40 transition-colors duration-300">
