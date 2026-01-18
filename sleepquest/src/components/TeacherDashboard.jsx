@@ -44,7 +44,6 @@ export default function TeacherDashboard() {
     );
   }
 
-
   const handleLogout = async () => {
     await logout();
     navigate("/");
@@ -151,12 +150,7 @@ function TeacherHeader({
             </button>
 
             <ThemeToggle />
-            <button
-              onClick={() => setCurrentView("codes")}
-              className="px-4 py-2 rounded-xl bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 text-blue-600 dark:text-blue-400 font-semibold text-sm transition-colors whitespace-nowrap"
-            >
-              📋 הקודים שלי עבור התלמידים
-            </button>
+
             <button
               onClick={onLogout}
               className="px-4 py-2 rounded-xl bg-red-100 dark:bg-red-500/20 hover:bg-red-200 dark:hover:bg-red-500/30 text-red-600 dark:text-red-400 font-semibold text-sm transition-colors"
@@ -178,7 +172,12 @@ function SubmissionsSection({ classData }) {
       <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">
         📊 הגשות תלמידים
       </h2>
-
+      <button
+        onClick={() => setCurrentView("codes")}
+        className="px-4 py-2 rounded-xl bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 text-blue-600 dark:text-blue-400 font-semibold text-sm transition-colors whitespace-nowrap"
+      >
+        📋 הקודים שלי עבור התלמידים
+      </button>
       {/* Summary Card */}
       <div className="bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-slate-700/50 p-6 mb-6 transition-colors duration-300">
         <div className="flex items-center justify-between mb-4">

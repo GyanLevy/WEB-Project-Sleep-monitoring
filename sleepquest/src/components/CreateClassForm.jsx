@@ -1,7 +1,4 @@
 /**
- * Admin form to create new classes
- * All logic delegated to custom hooks
- *
  * Workflow:
  * 1. Create teacher first (WITHOUT class assignment)
  * 2. Create class and assign that teacher
@@ -213,56 +210,6 @@ export default function CreateClassForm() {
               <p className="text-slate-600 dark:text-slate-400">{progress}</p>
             </div>
           )}
-        </div>
-
-        {/* Workflow Info Card */}
-        <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-lg p-6 mb-6 text-right">
-          <h3 className="font-semibold text-green-900 dark:text-green-300 mb-3">
-            🔄 זרימת עבודה מושלמת
-          </h3>
-          <div className="text-sm text-green-800 dark:text-green-400 space-y-2">
-            <div className="flex gap-2 justify-end">
-              <span>צור מורים (הקצאת כיתה היא לחלוטין אופציונלית)</span>
-              <span className="font-bold min-w-fit">שלב 1:</span>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <span>צור כיתות והקצה כל מורה זמין</span>
-              <span className="font-bold min-w-fit">שלב 2:</span>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <span>המורה יקבל 30 קודי תלמידים באופן אוטומטי</span>
-              <span className="font-bold min-w-fit">שלב 3:</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Info Card */}
-        <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-lg p-6 text-right">
-          <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-3">
-            ℹ️ איך זה עובד
-          </h3>
-          <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-2">
-            <li className="flex gap-2 justify-end">
-              <span>מורה חייב להיות מוקצה לכיתה</span>
-              <span>✅</span>
-            </li>
-            <li className="flex gap-2 justify-end">
-              <span>קודים נוצרים באופן אוטומטי</span>
-              <span>✅</span>
-            </li>
-            <li className="flex gap-2 justify-end">
-              <span>מורה מקבל את הקודים באופן אוטומטי</span>
-              <span>✅</span>
-            </li>
-            <li className="flex gap-2 justify-end">
-              <span>כל מורה יכול ללמד רק כיתה אחת</span>
-              <span>✅</span>
-            </li>
-            <li className="flex gap-2 justify-end">
-              <span>30 סטודנטים נוצרים לכל כיתה</span>
-              <span>✅</span>
-            </li>
-          </ul>
         </div>
       </div>
     </div>
