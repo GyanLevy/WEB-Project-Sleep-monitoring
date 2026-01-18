@@ -1,29 +1,30 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { LoadingSpinner, ThemeToggle } from './ui';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import { LoadingSpinner, ThemeToggle } from "./ui";
 
 /**
  * LoginScreen Component
  * Entry point for student authentication using a 6-digit token.
+ * Also includes buttons for teacher and admin access.
  */
 export default function LoginScreen() {
-  const [token, setToken] = useState('');
-  const [error, setError] = useState('');
+  const [token, setToken] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const handleTokenChange = (e) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
     setToken(value);
-    setError('');
+    setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
     const result = await login(token);
 
@@ -35,9 +36,9 @@ export default function LoginScreen() {
 
     // Use the hasSubmittedToday from login result (not stale state)
     if (result.hasSubmittedToday) {
-      navigate('/complete');
+      navigate("/complete");
     } else {
-      navigate('/diary');
+      navigate("/diary");
     }
   };
 
@@ -58,8 +59,8 @@ export default function LoginScreen() {
 
       {/* Main card */}
       <div className="relative z-10 w-full max-w-md">
-        {/* Theme Toggle - above the card */}
-        <div className="flex justify-start mb-4">
+        {/* Theme Toggle - top of the card area */}
+        <div className="absolute top-0 left-0 -translate-y-full pb-4">
           <ThemeToggle />
         </div>
 
@@ -79,7 +80,7 @@ export default function LoginScreen() {
           {/* Divider */}
           <Divider />
 
-          {/* Teacher/Admin Placeholders */}
+          {/* Teacher/Admin Access Buttons */}
           <AlternativeAccessButtons />
         </div>
 
@@ -98,14 +99,26 @@ function LoginHeader() {
   return (
     <div className="text-center mb-8">
       <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30 mb-4">
-        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        <svg
+          className="w-10 h-10 text-white"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+          />
         </svg>
       </div>
       <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
         SleepQuest
       </h1>
-      <p className="text-slate-500 dark:text-slate-400 mt-2 transition-colors duration-300">עקוב אחר מסע השינה שלך</p>
+      <p className="text-slate-500 dark:text-slate-400 mt-2 transition-colors duration-300">
+        עקוב אחר מסע השינה שלך
+      </p>
     </div>
   );
 }
@@ -131,7 +144,7 @@ function LoginForm({ token, error, isLoading, onTokenChange, onSubmit }) {
             onChange={onTokenChange}
             placeholder="000000"
             className="w-full px-4 py-4 text-center text-2xl font-mono tracking-[0.5em] bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-            style={{ direction: 'ltr' }}
+            style={{ direction: "ltr" }}
             maxLength={6}
             autoComplete="off"
           />
@@ -140,7 +153,7 @@ function LoginForm({ token, error, isLoading, onTokenChange, onSubmit }) {
           </div>
         </div>
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 transition-colors duration-300">
-          קוד הגישה בן 6 הספרות ניתן לך על ידי המורה שלך
+          קוד הגישה בן 6 הספרות נתון לך על ידי המורה שלך
         </p>
       </div>
 
@@ -160,13 +173,25 @@ function LoginForm({ token, error, isLoading, onTokenChange, onSubmit }) {
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
             </svg>
             מתחבר...
           </span>
         ) : (
-          'התחבר כתלמיד'
+          "התחבר כתלמיד"
         )}
       </button>
     </form>
@@ -184,7 +209,9 @@ function Divider() {
         <div className="w-full border-t border-slate-200 dark:border-slate-700 transition-colors duration-300"></div>
       </div>
       <div className="relative flex justify-center text-sm">
-        <span className="px-4 bg-white/80 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 transition-colors duration-300">גישה נוספת</span>
+        <span className="px-4 bg-white/80 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 transition-colors duration-300">
+          גישה נוספת
+        </span>
       </div>
     </div>
   );
@@ -192,24 +219,29 @@ function Divider() {
 
 /**
  * AlternativeAccessButtons Component
- * Placeholder buttons for teacher/admin access.
+ * Teacher and admin access buttons with actual navigation.
  */
 function AlternativeAccessButtons() {
+  const navigate = useNavigate();
+
   return (
     <div className="grid grid-cols-2 gap-4">
+      {/* Teacher Login Button */}
       <button
         type="button"
-        className="py-3 px-4 bg-slate-100 dark:bg-slate-700/30 hover:bg-slate-200 dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 text-sm rounded-xl transition-all duration-200"
-        onClick={() => alert('כניסת מורים תהיה זמינה בקרוב')}
+        onClick={() => navigate("/teacher/login")}
+        className="py-3 px-4 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-500/20 dark:to-emerald-500/20 hover:from-green-200 hover:to-emerald-200 dark:hover:from-green-500/30 dark:hover:to-emerald-500/30 border border-green-200 dark:border-green-500/30 text-green-600 dark:text-green-400 text-sm rounded-xl transition-all duration-200 font-medium"
       >
-        כניסת מורה
+        👨‍🏫 כניסת מורה
       </button>
+
+      {/* Admin Login Button */}
       <button
         type="button"
-        className="py-3 px-4 bg-slate-100 dark:bg-slate-700/30 hover:bg-slate-200 dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 text-sm rounded-xl transition-all duration-200"
-        onClick={() => alert('כניסת מנהלים תהיה זמינה בקרוב')}
+        onClick={() => navigate("/admin/login")}
+        className="py-3 px-4 bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-500/20 dark:to-orange-500/20 hover:from-red-200 hover:to-orange-200 dark:hover:from-red-500/30 dark:hover:to-orange-500/30 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 text-sm rounded-xl transition-all duration-200 font-medium"
       >
-        כניסת מנהל
+        🔑 כניסת מנהל
       </button>
     </div>
   );
@@ -223,10 +255,20 @@ function PrivacyNotice() {
   return (
     <div className="mt-6 text-center">
       <div className="inline-flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 transition-colors duration-300">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          />
         </svg>
-        <span>הנתונים שלך אנונימיים לחלוטין • לא נאסף מידע אישי</span>
+        <span>הנתונים שלך אנונימיים ומוגנים • לא נאסף מידע אישי</span>
       </div>
     </div>
   );
