@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
-} from 'firebase/auth';
+  onAuthStateChanged,
+} from "firebase/auth";
 import {
   collection,
   getDocs,
@@ -12,12 +12,12 @@ import {
   doc,
   getDoc,
   addDoc,
-  serverTimestamp
-} from 'firebase/firestore';
-import { auth, db } from '../firebase';
-import { getFirebaseErrorMessage } from '../utils/firebaseErrors';
+  serverTimestamp,
+} from "firebase/firestore";
+import { auth, db } from "../firebase";
+import { getFirebaseErrorMessage } from "../utils/firebaseErrors";
 
-import { TeacherContext } from './teacherHelpers';
+import { TeacherContext } from "./teacherHelpers";
 
 export function TeacherProvider({ children }) {
   const [teacherState, setTeacherState] = useState(null);
@@ -31,26 +31,31 @@ export function TeacherProvider({ children }) {
     setIsLoading(true);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
       const user = userCredential.user;
 
-      const teacherDocRef = doc(db, 'teachers', user.uid);
+      const teacherDocRef = doc(db, "teachers", user.uid);
       const teacherDoc = await getDoc(teacherDocRef);
 
-      if (!teacherDoc.exists() || teacherDoc.data().role !== 'teacher') {
+      if (!teacherDoc.exists() || teacherDoc.data().role !== "teacher") {
         await signOut(auth);
         setIsLoading(false);
         return {
           success: false,
-          error: 'משתמש זה אינו מורה. אנא התחבר עם חשבון מורה.'
+          error: "משתמש זה אינו מורה. אנא התחבר עם חשבון מורה.",
         };
       }
 
       setTeacherState({
         uid: user.uid,
         email: user.email,
-        displayName: teacherDoc.data().displayName || 'מורה',
-        classId: teacherDoc.data().classId
+        displayName: teacherDoc.data().displayName || "מורה",
+        classId: teacherDoc.data().classId,
+        studentCodes: teacherDoc.data().studentCodes,
       });
 
       if (teacherDoc.data().classId) {
@@ -63,14 +68,14 @@ export function TeacherProvider({ children }) {
       setIsLoading(false);
       return {
         success: true,
-        message: 'התחברות מוצלחת'
+        message: "התחברות מוצלחת",
       };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       setIsLoading(false);
       return {
         success: false,
-        error: getFirebaseErrorMessage(error)
+        error: getFirebaseErrorMessage(error),
       };
     }
   };
@@ -78,37 +83,37 @@ export function TeacherProvider({ children }) {
   // Load all classes
   const loadAllClasses = async () => {
     try {
-      const classesRef = collection(db, 'classes');
+      const classesRef = collection(db, "classes");
       const classesSnap = await getDocs(classesRef);
 
-      const classes = classesSnap.docs.map(doc => ({
+      const classes = classesSnap.docs.map((doc) => ({
         id: doc.id,
-        name: doc.data().name
+        name: doc.data().name,
       }));
 
       setAllClasses(classes);
-      console.log('All classes loaded:', classes);
+      console.log("All classes loaded:", classes);
     } catch (error) {
-      console.error('Error loading all classes:', error);
+      console.error("Error loading all classes:", error);
     }
   };
 
   // Load class data
   const loadClassData = async (classId, teacherId) => {
     try {
-      const classDocRef = doc(db, 'classes', classId);
+      const classDocRef = doc(db, "classes", classId);
       const classDoc = await getDoc(classDocRef);
 
       if (!classDoc.exists()) {
-        console.error('Class not found');
+        console.error("Class not found");
         return;
       }
 
       const className = classDoc.data().name;
 
-      const studentsRef = collection(db, 'students');
+      const studentsRef = collection(db, "students");
       const studentsSnap = await getDocs(
-        query(studentsRef, where('classId', '==', classId))
+        query(studentsRef, where("classId", "==", classId)),
       );
 
       const totalStudents = studentsSnap.size;
@@ -118,7 +123,7 @@ export function TeacherProvider({ children }) {
       for (let i = 6; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = date.toISOString().split("T")[0];
 
         let submitted = 0;
         for (const studentDoc of studentsSnap.docs) {
@@ -134,7 +139,7 @@ export function TeacherProvider({ children }) {
           date: dateStr,
           submitted: submitted,
           total: totalStudents,
-          submittedAt: new Date(dateStr).toISOString()
+          submittedAt: new Date(dateStr).toISOString(),
         });
       }
 
@@ -142,35 +147,32 @@ export function TeacherProvider({ children }) {
         classId: classId,
         className: className,
         totalStudents: totalStudents,
-        submissions: submissions
+        submissions: submissions,
       });
 
       await loadTeacherQuestions(classId, teacherId);
     } catch (error) {
-      console.error('Error loading class data:', error);
+      console.error("Error loading class data:", error);
     }
   };
 
   // Load teacher's questions
   const loadTeacherQuestions = async (classId, teacherId) => {
     try {
-      const questionsRef = collection(db, 'questions');
+      const questionsRef = collection(db, "questions");
       const questionsSnap = await getDocs(
-        query(
-          questionsRef,
-          where('createdBy', '==', teacherId)
-        )
+        query(questionsRef, where("createdBy", "==", teacherId)),
       );
 
-      const teacherQuestions = questionsSnap.docs.map(doc => ({
+      const teacherQuestions = questionsSnap.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }));
 
       setQuestions(teacherQuestions);
-      console.log('Loaded teacher questions:', teacherQuestions);
+      console.log("Loaded teacher questions:", teacherQuestions);
     } catch (error) {
-      console.error('Error loading questions:', error);
+      console.error("Error loading questions:", error);
     }
   };
 
@@ -180,14 +182,14 @@ export function TeacherProvider({ children }) {
       if (!teacherState || !classData) {
         return {
           success: false,
-          error: 'נתונים חסרים'
+          error: "נתונים חסרים",
         };
       }
 
       if (!questionData.text_he || !questionData.type) {
         return {
           success: false,
-          error: 'נתונים חסרים (טקסט וסוג)'
+          error: "נתונים חסרים (טקסט וסוג)",
         };
       }
 
@@ -195,11 +197,11 @@ export function TeacherProvider({ children }) {
       if (questionCount >= 5) {
         return {
           success: false,
-          error: 'לא ניתן להוסיף יותר משאלות. מקסימום 5 שאלות.'
+          error: "לא ניתן להוסיף יותר משאלות. מקסימום 5 שאלות.",
         };
       }
 
-      console.log('Adding question with data:', questionData);
+      console.log("Adding question with data:", questionData);
 
       // Determine classIds
       let classIds = questionData.classIds || [];
@@ -210,56 +212,58 @@ export function TeacherProvider({ children }) {
       const newQuestion = {
         text_he: questionData.text_he,
         type: questionData.type,
-        status: 'pending',
+        status: "pending",
         createdBy: teacherState.uid,
         createdAt: serverTimestamp(),
 
-        emoji: questionData.emoji || '📝',
+        emoji: questionData.emoji || "📝",
 
         ...(questionData.options_he && {
-          options_he: questionData.options_he
+          options_he: questionData.options_he,
         }),
         ...(questionData.options_emoji && {
-          options_emoji: questionData.options_emoji
+          options_emoji: questionData.options_emoji,
         }),
         ...(questionData.unit_he && {
-          unit_he: questionData.unit_he
+          unit_he: questionData.unit_he,
         }),
 
         // Multi-class support
         classIds: classIds,
 
         approvedAt: null,
-        approvedBy: null
+        approvedBy: null,
       };
 
-      const questionsRef = collection(db, 'questions');
+      const questionsRef = collection(db, "questions");
       const docRef = await addDoc(questionsRef, newQuestion);
 
-      console.log('Question added with ID:', docRef.id);
+      console.log("Question added with ID:", docRef.id);
 
       setQuestions([
         ...questions,
         {
           id: docRef.id,
           ...newQuestion,
-          createdAt: new Date().toISOString()
-        }
+          createdAt: new Date().toISOString(),
+        },
       ]);
 
-      const classNames = classIds.includes('all')
-        ? 'כל הכיתות'
-        : classIds.map(id => allClasses.find(c => c.id === id)?.name || id).join(', ');
+      const classNames = classIds.includes("all")
+        ? "כל הכיתות"
+        : classIds
+            .map((id) => allClasses.find((c) => c.id === id)?.name || id)
+            .join(", ");
 
       return {
         success: true,
-        message: `השאלה נוספה בהצלחה וממתינה לאישור (${classNames})`
+        message: `השאלה נוספה בהצלחה וממתינה לאישור (${classNames})`,
       };
     } catch (error) {
-      console.error('Error adding question:', error);
+      console.error("Error adding question:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   };
@@ -268,10 +272,10 @@ export function TeacherProvider({ children }) {
   const getQuestionCount = () => questions.length;
 
   const getApprovedQuestionCount = () =>
-    questions.filter(q => q.status === 'approved').length;
+    questions.filter((q) => q.status === "approved").length;
 
   const getPendingQuestionCount = () =>
-    questions.filter(q => q.status === 'pending').length;
+    questions.filter((q) => q.status === "pending").length;
 
   const getSubmissionsData = () => classData?.submissions || [];
 
@@ -286,7 +290,7 @@ export function TeacherProvider({ children }) {
       setClassData(null);
       setQuestions([]);
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -305,17 +309,18 @@ export function TeacherProvider({ children }) {
       if (!isMounted) return;
 
       if (user) {
-        const teacherDocRef = doc(db, 'teachers', user.uid);
+        const teacherDocRef = doc(db, "teachers", user.uid);
         const teacherDoc = await getDoc(teacherDocRef);
 
         if (!isMounted) return;
 
-        if (teacherDoc.exists() && teacherDoc.data().role === 'teacher') {
+        if (teacherDoc.exists() && teacherDoc.data().role === "teacher") {
           setTeacherState({
             uid: user.uid,
             email: user.email,
-            displayName: teacherDoc.data().displayName || 'מורה',
-            classId: teacherDoc.data().classId
+            displayName: teacherDoc.data().displayName || "מורה",
+            classId: teacherDoc.data().classId,
+            studentCodes: teacherDoc.data().studentCodes || [],
           });
 
           if (teacherDoc.data().classId) {
@@ -356,13 +361,11 @@ export function TeacherProvider({ children }) {
     getQuestionCount,
     getApprovedQuestionCount,
     getPendingQuestionCount,
-    getAllClasses
+    getAllClasses,
   };
 
   return (
-    <TeacherContext.Provider value={value}>
-      {children}
-    </TeacherContext.Provider>
+    <TeacherContext.Provider value={value}>{children}</TeacherContext.Provider>
   );
 }
 

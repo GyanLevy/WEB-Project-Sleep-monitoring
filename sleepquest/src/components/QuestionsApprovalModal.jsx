@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useAdmin } from '../context/adminHelpers';
+import { useState } from "react";
+import { useAdmin } from "../context/adminHelpers";
 
 /**
  * QuestionsApprovalModal Component - Multi-Class Edition
@@ -14,7 +14,9 @@ export default function QuestionsApprovalModal({ classData, onClose }) {
       <ModalBackdrop onClose={onClose}>
         <ModalContent>
           <div className="p-8 text-center">
-            <p className="text-slate-600 dark:text-slate-400">אין שאלות בהמתנה לאישור</p>
+            <p className="text-slate-600 dark:text-slate-400">
+              אין שאלות בהמתנה לאישור
+            </p>
             <button
               onClick={onClose}
               className="mt-6 px-6 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-white rounded-lg transition-colors"
@@ -32,10 +34,10 @@ export default function QuestionsApprovalModal({ classData, onClose }) {
     const result = await handleQuestionApproval(
       classData.id,
       question.id,
-      true
+      true,
     );
     if (result.success) {
-      console.log('✅ Question approved');
+      console.log("✅ Question approved");
     }
     setProcessing(null);
   };
@@ -45,10 +47,10 @@ export default function QuestionsApprovalModal({ classData, onClose }) {
     const result = await handleQuestionApproval(
       classData.id,
       question.id,
-      false
+      false,
     );
     if (result.success) {
-      console.log('✅ Question rejected');
+      console.log("✅ Question rejected");
     }
     setProcessing(null);
   };
@@ -65,8 +67,18 @@ export default function QuestionsApprovalModal({ classData, onClose }) {
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
           >
-            <svg className="w-6 h-6 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6 text-slate-600 dark:text-slate-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -100,19 +112,19 @@ export default function QuestionsApprovalModal({ classData, onClose }) {
 
 function QuestionApprovalCard({ question, isProcessing, onApprove, onReject }) {
   // Support both old format (questionText) and new format (text_he)
-  const questionText = question.text_he || question.questionText || 'שאלה';
-  const questionType = question.type || 'text';
-  const emoji = question.emoji || '📝';
+  const questionText = question.text_he || question.questionText || "שאלה";
+  const questionType = question.type || "text";
+  const emoji = question.emoji || "📝";
   const classIds = question.classIds || [];
 
   // Determine which classes this applies to
-  const classDisplay = classIds.includes('all')
-    ? '🌍 כל הכיתות'
+  const classDisplay = classIds.includes("all")
+    ? "🌍 כל הכיתות"
     : classIds.length > 1
-    ? `📚 ${classIds.length} כיתות`
-    : classIds.length === 1
-    ? `📚 כיתה אחת`
-    : 'כל הכיתות';
+      ? `📚 ${classIds.length} כיתות`
+      : classIds.length === 1
+        ? `📚 כיתה אחת`
+        : "כל הכיתות";
 
   return (
     <div className="bg-slate-50 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-700/50 rounded-xl p-6 transition-all duration-300 hover:shadow-md dark:hover:shadow-xl">
@@ -141,9 +153,11 @@ function QuestionApprovalCard({ question, isProcessing, onApprove, onReject }) {
         </div>
 
         {/* Show options if radio question */}
-        {questionType === 'radio' && question.options_he && (
+        {questionType === "radio" && question.options_he && (
           <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-4 border-r-4 border-indigo-500">
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">אפשרויות:</p>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+              אפשרויות:
+            </p>
             <div className="flex flex-wrap gap-2">
               {question.options_he.map((option, idx) => {
                 const optionEmoji = question.options_emoji?.[idx];
@@ -162,10 +176,14 @@ function QuestionApprovalCard({ question, isProcessing, onApprove, onReject }) {
         )}
 
         {/* Show unit if number question */}
-        {questionType === 'number' && question.unit_he && (
+        {questionType === "number" && question.unit_he && (
           <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-4 border-r-4 border-green-500">
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">יחידת מידה:</p>
-            <p className="text-slate-900 dark:text-white font-medium">{question.unit_he}</p>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+              יחידת מידה:
+            </p>
+            <p className="text-slate-900 dark:text-white font-medium">
+              {question.unit_he}
+            </p>
           </div>
         )}
 
@@ -196,7 +214,9 @@ function QuestionApprovalCard({ question, isProcessing, onApprove, onReject }) {
         {/* Timestamp */}
         {question.submittedAt && (
           <p className="text-xs text-slate-400 dark:text-slate-500">
-            ⏰ הוגש: {new Date(question.submittedAt).toLocaleDateString('he-IL')} בשעה {new Date(question.submittedAt).toLocaleTimeString('he-IL')}
+            ⏰ הוגש:{" "}
+            {new Date(question.submittedAt).toLocaleDateString("he-IL")} בשעה{" "}
+            {new Date(question.submittedAt).toLocaleTimeString("he-IL")}
           </p>
         )}
       </div>
@@ -211,15 +231,37 @@ function QuestionApprovalCard({ question, isProcessing, onApprove, onReject }) {
           {isProcessing ? (
             <>
               <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
               מעדכן...
             </>
           ) : (
             <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               ✅ אישור
             </>
@@ -234,15 +276,37 @@ function QuestionApprovalCard({ question, isProcessing, onApprove, onReject }) {
           {isProcessing ? (
             <>
               <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
               מעדכן...
             </>
           ) : (
             <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
               ❌ דחייה
             </>
@@ -259,9 +323,7 @@ function ModalBackdrop({ children, onClose }) {
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div onClick={(e) => e.stopPropagation()}>
-        {children}
-      </div>
+      <div onClick={(e) => e.stopPropagation()}>{children}</div>
     </div>
   );
 }
@@ -270,7 +332,7 @@ function ModalContent({ children, isLarge = false }) {
   return (
     <div
       className={`bg-white dark:bg-slate-800 rounded-2xl shadow-2xl transition-colors duration-300 ${
-        isLarge ? 'max-w-2xl w-full' : 'max-w-md w-full'
+        isLarge ? "max-w-2xl w-full" : "max-w-md w-full"
       }`}
     >
       {children}
@@ -280,11 +342,11 @@ function ModalContent({ children, isLarge = false }) {
 
 function getQuestionTypeLabel(type) {
   const labels = {
-    text: '📝 טקסט חופשי',
-    number: '🔢 מספר',
-    radio: '⭕ בחירה אחת',
-    checkbox: '☑️ בחירה מרובה',
-    time: '⏰ שעה'
+    text: "📝 טקסט חופשי",
+    number: "🔢 מספר",
+    radio: "⭕ בחירה אחת",
+    checkbox: "☑️ בחירה מרובה",
+    time: "⏰ שעה",
   };
   return labels[type] || type;
 }

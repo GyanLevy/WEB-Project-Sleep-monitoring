@@ -1,28 +1,34 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { useAuth } from './hooks/useAuth';
-import { AdminProvider } from './context/AdminContext';
-import { useAdmin } from './context/adminHelpers';
-import { TeacherProvider } from './context/TeacherContext';
-import { useTeacher } from './hooks/useTeacher';
-import { ThemeProvider } from './context/ThemeContext';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./hooks/useAuth";
+import { AdminProvider } from "./context/AdminContext";
+import { useAdmin } from "./context/adminHelpers";
+import { TeacherProvider } from "./context/TeacherContext";
+import { useTeacher } from "./hooks/useTeacher";
+import { ThemeProvider } from "./context/ThemeContext";
 
 // Student Components
-import LoginScreen from './components/LoginScreen';
-import QuestionnaireFlow from './components/QuestionnaireFlow';
-import CompletionScreen from './components/CompletionScreen';
-import GameView from './components/GameView';
+import LoginScreen from "./components/LoginScreen";
+import QuestionnaireFlow from "./components/QuestionnaireFlow";
+import CompletionScreen from "./components/CompletionScreen";
+import GameView from "./components/GameView";
 
 // Admin Components
-import AdminLoginScreen from './components/AdminLoginScreen';
-import AdminDashboard from './components/AdminDashboard';
+import AdminLoginScreen from "./components/AdminLoginScreen";
+import AdminDashboard from "./components/AdminDashboard";
+import { TeacherManagementProvider } from "./context/TeacherManagementContext";
+import { ClassManagementProvider } from "./context/ClassManagementContext";
 
 // Teacher Components
-import TeacherLoginScreen from './components/TeacherLoginScreen';
-import TeacherDashboard from './components/TeacherDashboard';
+import TeacherLoginScreen from "./components/TeacherLoginScreen";
+import TeacherDashboard from "./components/TeacherDashboard";
 
-// Debug Component
-import DebugSeeder from './components/DebugSeeder';
+//Question Components
 
 // ========================================
 // CONFIGURATION
@@ -199,16 +205,20 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <AdminProvider>
-          <TeacherProvider>
-            <Router>
-              <div className="font-sans antialiased">
-                <AppRoutes />
+          <TeacherManagementProvider>
+            <ClassManagementProvider>
+              <TeacherProvider>
+                <Router>
+                  <div className="font-sans antialiased">
+                    <AppRoutes />
 
-                {/* Debug Seeder - Controlled by SHOW_DEV_TOOLS flag */}
-                {SHOW_DEV_TOOLS && <DebugSeeder />}
-              </div>
-            </Router>
-          </TeacherProvider>
+                    {/* Debug Seeder - Controlled by SHOW_DEV_TOOLS flag */}
+                    {SHOW_DEV_TOOLS && <DebugSeeder />}
+                  </div>
+                </Router>
+              </TeacherProvider>
+            </ClassManagementProvider>
+          </TeacherManagementProvider>
         </AdminProvider>
       </AuthProvider>
     </ThemeProvider>

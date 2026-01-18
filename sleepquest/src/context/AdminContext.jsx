@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
-} from 'firebase/auth';
+  onAuthStateChanged,
+} from "firebase/auth";
 import {
   collection,
   getDocs,
@@ -12,12 +12,12 @@ import {
   doc,
   getDoc,
   updateDoc,
-  serverTimestamp
-} from 'firebase/firestore';
-import { auth, db } from '../firebase';
-import { getFirebaseErrorMessage } from '../utils/firebaseErrors';
+  serverTimestamp,
+} from "firebase/firestore";
+import { auth, db } from "../firebase";
+import { getFirebaseErrorMessage } from "../utils/firebaseErrors";
 
-import { AdminContext } from './adminHelpers';
+import { AdminContext } from "./adminHelpers";
 
 export function AdminProvider({ children }) {
   const [adminState, setAdminState] = useState(null);
@@ -30,10 +30,14 @@ export function AdminProvider({ children }) {
     setIsLoading(true);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
       const user = userCredential.user;
 
-      const adminDocRef = doc(db, 'admins', user.uid);
+      const adminDocRef = doc(db, "admins", user.uid);
       const adminDoc = await getDoc(adminDocRef);
 
       if (!adminDoc.exists() || !adminDoc.data().isAdmin) {
@@ -41,14 +45,14 @@ export function AdminProvider({ children }) {
         setIsLoading(false);
         return {
           success: false,
-          error: 'משתמש זה אינו מנהל. אנא התחבר עם חשבון מנהל.'
+          error: "משתמש זה אינו מנהל. אנא התחבר עם חשבון מנהל.",
         };
       }
 
       setAdminState({
         uid: user.uid,
         email: user.email,
-        displayName: adminDoc.data().displayName || 'Admin'
+        displayName: adminDoc.data().displayName || "Admin",
       });
 
       await loadClasses();
@@ -56,14 +60,14 @@ export function AdminProvider({ children }) {
       setIsLoading(false);
       return {
         success: true,
-        message: 'התחברות מוצלחת'
+        message: "התחברות מוצלחת",
       };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       setIsLoading(false);
       return {
         success: false,
-        error: getFirebaseErrorMessage(error)
+        error: getFirebaseErrorMessage(error),
       };
     }
   };
@@ -71,7 +75,7 @@ export function AdminProvider({ children }) {
   // Load classes data and pending questions
   const loadClasses = async () => {
     try {
-      const classesRef = collection(db, 'classes');
+      const classesRef = collection(db, "classes");
       const classesSnap = await getDocs(classesRef);
 
       const classesData = [];
@@ -81,16 +85,16 @@ export function AdminProvider({ children }) {
         const className = classDoc.data().name;
 
         // Get students for this class
-        const studentsRef = collection(db, 'students');
+        const studentsRef = collection(db, "students");
         const studentsSnap = await getDocs(
-          query(studentsRef, where('classId', '==', classId))
+          query(studentsRef, where("classId", "==", classId)),
         );
 
         const totalStudents = studentsSnap.size;
 
         // Count active students (submitted this month)
         const today = new Date();
-        const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
         let activeStudents = 0;
         for (const studentDoc of studentsSnap.docs) {
@@ -108,17 +112,16 @@ export function AdminProvider({ children }) {
           totalStudents: totalStudents,
           activeStudents: activeStudents,
           pendingQuestionsCount: 0,
-          pending: []
+          pending: [],
         });
       }
 
       // ============================================
       // GET ALL PENDING QUESTIONS (MULTICLASS SUPPORT)
       // ============================================
-      // Now get ALL pending questions (not filtered by classId)
-      const questionsRef = collection(db, 'questions');
+      const questionsRef = collection(db, "questions");
       const allPendingSnap = await getDocs(
-        query(questionsRef, where('status', '==', 'pending'))
+        query(questionsRef, where("status", "==", "pending")),
       );
 
       console.log(`Found ${allPendingSnap.size} total pending questions`);
@@ -127,43 +130,45 @@ export function AdminProvider({ children }) {
       const pendingMap = {};
 
       // Initialize all classes in map
-      classesData.forEach(cls => {
+      classesData.forEach((cls) => {
         pendingMap[cls.id] = [];
       });
 
       // Process each pending question
-      allPendingSnap.docs.forEach(qDoc => {
+      allPendingSnap.docs.forEach((qDoc) => {
         const questionData = qDoc.data();
-        const classIds = questionData.classIds || []; // Multiclass support
+        const classIds = questionData.classIds || [];
 
         const pending = {
           id: qDoc.id,
           text_he: questionData.text_he,
           type: questionData.type,
-          emoji: questionData.emoji || '📝',
+          emoji: questionData.emoji || "📝",
           options_he: questionData.options_he,
           options_emoji: questionData.options_emoji,
           unit_he: questionData.unit_he,
           createdBy: questionData.createdBy,
           createdAt: questionData.createdAt,
           submittedAt: questionData.createdAt,
-          classIds: classIds // For display
+          classIds: classIds, // For display
         };
 
         // If question is for ALL classes, add to all classes
-        if (classIds.includes('all')) {
+        if (classIds.includes("all")) {
           console.log(`Question "${questionData.text_he}" is for ALL classes`);
-          classesData.forEach(cls => {
+          classesData.forEach((cls) => {
             pendingMap[cls.id].push({
               ...pending,
-              applicableToAllClasses: true
+              applicableToAllClasses: true,
             });
           });
         } else {
           // Otherwise, add to specific classes only
-          classIds.forEach(classId => {
+          classIds.forEach((classId) => {
             if (pendingMap[classId]) {
-              console.log(`Question "${questionData.text_he}" added to class ${classId}`);
+              console.log(
+                `Question "${questionData.text_he}" added to class ${classId}`,
+              );
               pendingMap[classId].push(pending);
             } else {
               console.warn(`Class ${classId} not found for question`);
@@ -173,7 +178,7 @@ export function AdminProvider({ children }) {
       });
 
       // Update counts
-      classesData.forEach(cls => {
+      classesData.forEach((cls) => {
         cls.pendingQuestionsCount = pendingMap[cls.id].length;
         cls.pending = pendingMap[cls.id];
       });
@@ -181,33 +186,35 @@ export function AdminProvider({ children }) {
       setClasses(classesData);
       setPendingQuestions(pendingMap);
 
-      console.log('Classes loaded with pending questions:', classesData);
+      console.log("Classes loaded with pending questions:", classesData);
     } catch (error) {
-      console.error('Error loading classes:', error);
+      console.error("Error loading classes:", error);
     }
   };
 
   // Approve or reject question
   const handleQuestionApproval = async (classId, questionId, approved) => {
     try {
-      const questionRef = doc(db, 'questions', questionId);
+      const questionRef = doc(db, "questions", questionId);
 
       await updateDoc(questionRef, {
-        status: approved ? 'approved' : 'rejected',
+        status: approved ? "approved" : "rejected",
         approvedAt: serverTimestamp(),
-        approvedBy: adminState.uid
+        approvedBy: adminState.uid,
       });
 
-      console.log(`Question ${questionId} ${approved ? 'approved' : 'rejected'}`);
+      console.log(
+        `Question ${questionId} ${approved ? "approved" : "rejected"}`,
+      );
 
       await loadClasses();
 
       return { success: true };
     } catch (error) {
-      console.error('Error updating question:', error);
+      console.error("Error updating question:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   };
@@ -220,13 +227,13 @@ export function AdminProvider({ children }) {
       setClasses([]);
       setPendingQuestions({});
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
   // Refresh data
   const refreshData = async () => {
-    console.log('Refreshing admin data...');
+    console.log("Refreshing admin data...");
     await loadClasses();
   };
 
@@ -238,7 +245,7 @@ export function AdminProvider({ children }) {
       if (!isMounted) return;
 
       if (user) {
-        const adminDocRef = doc(db, 'admins', user.uid);
+        const adminDocRef = doc(db, "admins", user.uid);
         const adminDoc = await getDoc(adminDocRef);
 
         if (!isMounted) return;
@@ -247,7 +254,7 @@ export function AdminProvider({ children }) {
           setAdminState({
             uid: user.uid,
             email: user.email,
-            displayName: adminDoc.data().displayName || 'Admin'
+            displayName: adminDoc.data().displayName || "Admin",
           });
           await loadClasses();
         }
@@ -278,12 +285,10 @@ export function AdminProvider({ children }) {
     loginAdmin,
     logout,
     handleQuestionApproval,
-    refreshData
+    refreshData,
   };
 
   return (
-    <AdminContext.Provider value={value}>
-      {children}
-    </AdminContext.Provider>
+    <AdminContext.Provider value={value}>{children}</AdminContext.Provider>
   );
 }
