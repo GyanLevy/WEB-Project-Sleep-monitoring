@@ -51,7 +51,21 @@ export function useQuestionnaireLogic() {
         }
 
         console.log(`✅ Loaded ${firebaseQuestions.length} questions from Firebase:`, firebaseQuestions);
-        setQuestions(firebaseQuestions);
+
+        // Filter questions by targetDay
+        // User's current day = completedDays + 1 (the day they're currently working on)
+        const userCurrentDay = completedDays + 1;
+        const filteredQuestions = firebaseQuestions.filter(question => {
+          // If targetDay is 0, missing, or null → show question every day
+          if (!question.targetDay) {
+            return true;
+          }
+          // Otherwise, only show if targetDay matches user's current day
+          return question.targetDay === userCurrentDay;
+        });
+
+        console.log(`📋 Filtered to ${filteredQuestions.length} questions for day ${userCurrentDay}`);
+        setQuestions(filteredQuestions);
         setError(null);
       } catch (err) {
         console.error('❌ Error loading questions from Firebase:', err);
@@ -65,7 +79,7 @@ export function useQuestionnaireLogic() {
     if (getQuestions) {
       loadQuestions();
     }
-  }, [getQuestions]);
+  }, [getQuestions, completedDays]);
 
   // Check if already submitted today - redirect in effect
   useEffect(() => {
