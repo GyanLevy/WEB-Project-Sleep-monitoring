@@ -64,7 +64,10 @@ export default function TeacherDashboard() {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto p-4 md:p-8">
         {/* Submissions Section */}
-        <SubmissionsSection classData={classData} />
+        <SubmissionsSection
+          setCurrentView={setCurrentView}
+          classData={classData}
+        />
 
         {/* Divider */}
         <div className="my-8 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent"></div>
@@ -121,6 +124,7 @@ function TeacherHeader({
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
                 SleepQuest מורים
               </h1>
+
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 {teacherName} 👋 | {className}
               </p>
@@ -128,6 +132,7 @@ function TeacherHeader({
           </div>
 
           {/* Action Buttons */}
+
           <div className="flex items-center gap-3">
             <button
               onClick={onRefresh}
@@ -148,14 +153,9 @@ function TeacherHeader({
                 />
               </svg>
             </button>
-            <button
-              onClick={() => setCurrentView("codes")}
-              className="px-4 py-2 rounded-xl bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 text-blue-600 dark:text-blue-400 font-semibold text-sm transition-colors whitespace-nowrap"
-            >
-              📋 הקודים שלי עבור התלמידים
-            </button>
-            <ThemeToggle />
 
+            <ThemeToggle />
+            <br />
             <button
               onClick={onLogout}
               className="px-4 py-2 rounded-xl bg-red-100 dark:bg-red-500/20 hover:bg-red-200 dark:hover:bg-red-500/30 text-red-600 dark:text-red-400 font-semibold text-sm transition-colors"
@@ -169,7 +169,7 @@ function TeacherHeader({
   );
 }
 
-function SubmissionsSection({ classData }) {
+function SubmissionsSection({ setCurrentView, classData }) {
   if (!classData) return null;
 
   return (
@@ -177,7 +177,12 @@ function SubmissionsSection({ classData }) {
       <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">
         📊 הגשות תלמידים
       </h2>
-
+      <button
+        onClick={() => setCurrentView("codes")}
+        className="px-4 py-2 rounded-xl bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 text-blue-600 dark:text-blue-400 font-semibold text-sm transition-colors whitespace-nowrap"
+      >
+        📋 הקודים שלי עבור התלמידים
+      </button>
       {/* Summary Card */}
       <div className="bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-slate-700/50 p-6 mb-6 transition-colors duration-300">
         <div className="flex items-center justify-between mb-4">
