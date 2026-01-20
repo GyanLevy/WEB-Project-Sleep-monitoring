@@ -101,7 +101,7 @@ export function AdminProvider({ children }) {
           const studentData = studentDoc.data();
           const lastSubmission = studentData.lastSubmissionDate;
 
-          if (lastSubmission && lastSubmission.startsWith(currentMonth)) {
+          if (lastSubmission) {
             activeStudents++;
           }
         }
