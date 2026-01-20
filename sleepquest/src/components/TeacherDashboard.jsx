@@ -214,9 +214,6 @@ function SubmissionsSection({ setCurrentView, classData }) {
                 <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600 dark:text-slate-300">
                   📊 אחוז
                 </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600 dark:text-slate-300">
-                  ⏰ שעה
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">
@@ -231,12 +228,6 @@ function SubmissionsSection({ setCurrentView, classData }) {
                     month: "short",
                     day: "numeric",
                   });
-                  const timeStr = submission.submittedAt
-                    ? new Date(submission.submittedAt).toLocaleTimeString(
-                        "he-IL",
-                        { hour: "2-digit", minute: "2-digit" },
-                      )
-                    : "-";
 
                   return (
                     <tr
@@ -274,9 +265,6 @@ function SubmissionsSection({ setCurrentView, classData }) {
                             {percentage}%
                           </span>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
-                        {timeStr}
                       </td>
                     </tr>
                   );
@@ -419,7 +407,6 @@ function getQuestionTypeLabel(type) {
     number: "🔢 מספר",
     radio: "⭕ בחירה אחת",
     checkbox: "☑️ בחירה מרובה",
-    time: "⏰ שעה",
   };
   return labels[type] || type;
 }
