@@ -4,20 +4,17 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  doc,
-  getDoc,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { collection, addDoc } from "firebase/firestore";
+import { auth } from "../firebase";
 import { getFirebaseErrorMessage } from "../utils/firebaseErrors";
-
 import { TeacherContext } from "./teacherHelpers";
+import {
+  getDocument,
+  getAllDocuments,
+  queryDocuments,
+  db,
+  getServerTimestamp,
+} from "../utils/firebaseUtils";
 
 export function TeacherProvider({ children }) {
   const [teacherState, setTeacherState] = useState(null);
@@ -38,10 +35,10 @@ export function TeacherProvider({ children }) {
       );
       const user = userCredential.user;
 
-      const teacherDocRef = doc(db, "teachers", user.uid);
-      const teacherDoc = await getDoc(teacherDocRef);
+      // Use utility to get teacher document
+      const teacherData = await getDocument("teachers", user.uid);
 
-      if (!teacherDoc.exists() || teacherDoc.data().role !== "teacher") {
+      if (!teacherData || teacherData.role !== "teacher") {
         await signOut(auth);
         setIsLoading(false);
         return {
@@ -53,13 +50,13 @@ export function TeacherProvider({ children }) {
       setTeacherState({
         uid: user.uid,
         email: user.email,
-        displayName: teacherDoc.data().displayName || "מורה",
-        classId: teacherDoc.data().classId,
-        studentCodes: teacherDoc.data().studentCodes,
+        displayName: teacherData.displayName || "מורה",
+        classId: teacherData.classId,
+        studentCodes: teacherData.studentCodes,
       });
 
-      if (teacherDoc.data().classId) {
-        await loadClassData(teacherDoc.data().classId, user.uid);
+      if (teacherData.classId) {
+        await loadClassData(teacherData.classId, user.uid);
       }
 
       // Load all classes for multi-class selection
@@ -80,19 +77,18 @@ export function TeacherProvider({ children }) {
     }
   };
 
-  // Load all classes
+  // Load all classes using utility
   const loadAllClasses = async () => {
     try {
-      const classesRef = collection(db, "classes");
-      const classesSnap = await getDocs(classesRef);
+      const classes = await getAllDocuments("classes");
 
-      const classes = classesSnap.docs.map((doc) => ({
+      const formattedClasses = classes.map((doc) => ({
         id: doc.id,
-        name: doc.data().name,
+        name: doc.name,
       }));
 
-      setAllClasses(classes);
-      console.log("All classes loaded:", classes);
+      setAllClasses(formattedClasses);
+      console.log("All classes loaded:", formattedClasses);
     } catch (error) {
       console.error("Error loading all classes:", error);
     }
@@ -101,22 +97,25 @@ export function TeacherProvider({ children }) {
   // Load class data
   const loadClassData = async (classId, teacherId) => {
     try {
-      const classDocRef = doc(db, "classes", classId);
-      const classDoc = await getDoc(classDocRef);
+      // Get class document using utility
+      const classDoc = await getDocument("classes", classId);
 
-      if (!classDoc.exists()) {
+      if (!classDoc) {
         console.error("Class not found");
         return;
       }
 
-      const className = classDoc.data().name;
+      const className = classDoc.name;
 
-      const studentsRef = collection(db, "students");
-      const studentsSnap = await getDocs(
-        query(studentsRef, where("classId", "==", classId)),
+      // Get students for this class using utility
+      const students = await queryDocuments(
+        "students",
+        "classId",
+        "==",
+        classId,
       );
 
-      const totalStudents = studentsSnap.size;
+      const totalStudents = students.length;
 
       // Build submissions data (7 days)
       const submissions = [];
@@ -126,9 +125,8 @@ export function TeacherProvider({ children }) {
         const dateStr = date.toISOString().split("T")[0];
 
         let submitted = 0;
-        for (const studentDoc of studentsSnap.docs) {
-          const studentData = studentDoc.data();
-          const lastSubmission = studentData.lastSubmissionDate;
+        for (const student of students) {
+          const lastSubmission = student.lastSubmissionDate;
 
           if (lastSubmission === dateStr) {
             submitted++;
@@ -156,18 +154,15 @@ export function TeacherProvider({ children }) {
     }
   };
 
-  // Load teacher's questions
+  // Load teacher's questions using utility
   const loadTeacherQuestions = async (classId, teacherId) => {
     try {
-      const questionsRef = collection(db, "questions");
-      const questionsSnap = await getDocs(
-        query(questionsRef, where("createdBy", "==", teacherId)),
+      const teacherQuestions = await queryDocuments(
+        "questions",
+        "createdBy",
+        "==",
+        teacherId,
       );
-
-      const teacherQuestions = questionsSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
 
       setQuestions(teacherQuestions);
       console.log("Loaded teacher questions:", teacherQuestions);
@@ -214,7 +209,7 @@ export function TeacherProvider({ children }) {
         type: questionData.type,
         status: "pending",
         createdBy: teacherState.uid,
-        createdAt: serverTimestamp(),
+        createdAt: getServerTimestamp(),
 
         emoji: questionData.emoji || "📝",
 
@@ -235,6 +230,7 @@ export function TeacherProvider({ children }) {
         approvedBy: null,
       };
 
+      // Use Firebase directly for addDoc (could add to utility if needed)
       const questionsRef = collection(db, "questions");
       const docRef = await addDoc(questionsRef, newQuestion);
 
@@ -309,22 +305,22 @@ export function TeacherProvider({ children }) {
       if (!isMounted) return;
 
       if (user) {
-        const teacherDocRef = doc(db, "teachers", user.uid);
-        const teacherDoc = await getDoc(teacherDocRef);
+        // Use utility to get teacher document
+        const teacherData = await getDocument("teachers", user.uid);
 
         if (!isMounted) return;
 
-        if (teacherDoc.exists() && teacherDoc.data().role === "teacher") {
+        if (teacherData && teacherData.role === "teacher") {
           setTeacherState({
             uid: user.uid,
             email: user.email,
-            displayName: teacherDoc.data().displayName || "מורה",
-            classId: teacherDoc.data().classId,
-            studentCodes: teacherDoc.data().studentCodes || [],
+            displayName: teacherData.displayName || "מורה",
+            classId: teacherData.classId,
+            studentCodes: teacherData.studentCodes || [],
           });
 
-          if (teacherDoc.data().classId) {
-            await loadClassData(teacherDoc.data().classId, user.uid);
+          if (teacherData.classId) {
+            await loadClassData(teacherData.classId, user.uid);
           }
 
           await loadAllClasses();
@@ -368,5 +364,3 @@ export function TeacherProvider({ children }) {
     <TeacherContext.Provider value={value}>{children}</TeacherContext.Provider>
   );
 }
-
-// export default TeacherContext; // Removing default export to satisfy Fast Refresh

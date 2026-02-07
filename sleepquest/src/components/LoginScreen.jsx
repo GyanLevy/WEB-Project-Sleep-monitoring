@@ -16,7 +16,11 @@ export default function LoginScreen() {
   const navigate = useNavigate();
 
   const handleTokenChange = (e) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+    //const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+    const value = e.target.value
+      .toUpperCase() // Auto-uppercase
+      .replace(/[^A-Z0-9]/g, "") // Allow letters & numbers
+      .slice(0, 6);
     setToken(value);
     setError("");
   };
@@ -139,7 +143,6 @@ function LoginForm({ token, error, isLoading, onTokenChange, onSubmit }) {
           <input
             type="text"
             inputMode="numeric"
-            pattern="[0-9]*"
             value={token}
             onChange={onTokenChange}
             placeholder="000000"

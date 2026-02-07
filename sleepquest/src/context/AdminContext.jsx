@@ -4,20 +4,16 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  doc,
-  getDoc,
-  updateDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { auth } from "../firebase";
 import { getFirebaseErrorMessage } from "../utils/firebaseErrors";
-
 import { AdminContext } from "./adminHelpers";
+import {
+  getDocument,
+  getAllDocuments,
+  queryDocuments,
+  updateDocument,
+  getServerTimestamp,
+} from "../utils/firebaseUtils";
 
 export function AdminProvider({ children }) {
   const [adminState, setAdminState] = useState(null);
@@ -37,10 +33,10 @@ export function AdminProvider({ children }) {
       );
       const user = userCredential.user;
 
-      const adminDocRef = doc(db, "admins", user.uid);
-      const adminDoc = await getDoc(adminDocRef);
+      // Use utility to get admin document
+      const adminData = await getDocument("admins", user.uid);
 
-      if (!adminDoc.exists() || !adminDoc.data().isAdmin) {
+      if (!adminData || !adminData.isAdmin) {
         await signOut(auth);
         setIsLoading(false);
         return {
@@ -52,7 +48,7 @@ export function AdminProvider({ children }) {
       setAdminState({
         uid: user.uid,
         email: user.email,
-        displayName: adminDoc.data().displayName || "Admin",
+        displayName: adminData.displayName || "Admin",
       });
 
       await loadClasses();
@@ -75,31 +71,32 @@ export function AdminProvider({ children }) {
   // Load classes data and pending questions
   const loadClasses = async () => {
     try {
-      const classesRef = collection(db, "classes");
-      const classesSnap = await getDocs(classesRef);
+      // Get all classes using utility
+      const allClasses = await getAllDocuments("classes");
 
       const classesData = [];
 
-      for (const classDoc of classesSnap.docs) {
+      for (const classDoc of allClasses) {
         const classId = classDoc.id;
-        const className = classDoc.data().name;
+        const className = classDoc.name;
 
-        // Get students for this class
-        const studentsRef = collection(db, "students");
-        const studentsSnap = await getDocs(
-          query(studentsRef, where("classId", "==", classId)),
+        // Get students for this class using utility
+        const students = await queryDocuments(
+          "students",
+          "classId",
+          "==",
+          classId,
         );
 
-        const totalStudents = studentsSnap.size;
+        const totalStudents = students.length;
 
         // Count active students (submitted this month)
         const today = new Date();
         const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
         let activeStudents = 0;
-        for (const studentDoc of studentsSnap.docs) {
-          const studentData = studentDoc.data();
-          const lastSubmission = studentData.lastSubmissionDate;
+        for (const student of students) {
+          const lastSubmission = student.lastSubmissionDate;
 
           if (lastSubmission) {
             activeStudents++;
@@ -119,12 +116,16 @@ export function AdminProvider({ children }) {
       // ============================================
       // GET ALL PENDING QUESTIONS (MULTICLASS SUPPORT)
       // ============================================
-      const questionsRef = collection(db, "questions");
-      const allPendingSnap = await getDocs(
-        query(questionsRef, where("status", "==", "pending")),
+      const allPendingQuestions = await queryDocuments(
+        "questions",
+        "status",
+        "==",
+        "pending",
       );
 
-      console.log(`Found ${allPendingSnap.size} total pending questions`);
+      console.log(
+        `Found ${allPendingQuestions.length} total pending questions`,
+      );
 
       // Build pending questions map organized by class
       const pendingMap = {};
@@ -135,27 +136,26 @@ export function AdminProvider({ children }) {
       });
 
       // Process each pending question
-      allPendingSnap.docs.forEach((qDoc) => {
-        const questionData = qDoc.data();
-        const classIds = questionData.classIds || [];
+      allPendingQuestions.forEach((question) => {
+        const classIds = question.classIds || [];
 
         const pending = {
-          id: qDoc.id,
-          text_he: questionData.text_he,
-          type: questionData.type,
-          emoji: questionData.emoji || "📝",
-          options_he: questionData.options_he,
-          options_emoji: questionData.options_emoji,
-          unit_he: questionData.unit_he,
-          createdBy: questionData.createdBy,
-          createdAt: questionData.createdAt,
-          submittedAt: questionData.createdAt,
+          id: question.id,
+          text_he: question.text_he,
+          type: question.type,
+          emoji: question.emoji || "📝",
+          options_he: question.options_he,
+          options_emoji: question.options_emoji,
+          unit_he: question.unit_he,
+          createdBy: question.createdBy,
+          createdAt: question.createdAt,
+          submittedAt: question.createdAt,
           classIds: classIds, // For display
         };
 
         // If question is for ALL classes, add to all classes
         if (classIds.includes("all")) {
-          console.log(`Question "${questionData.text_he}" is for ALL classes`);
+          console.log(`Question "${question.text_he}" is for ALL classes`);
           classesData.forEach((cls) => {
             pendingMap[cls.id].push({
               ...pending,
@@ -167,7 +167,7 @@ export function AdminProvider({ children }) {
           classIds.forEach((classId) => {
             if (pendingMap[classId]) {
               console.log(
-                `Question "${questionData.text_he}" added to class ${classId}`,
+                `Question "${question.text_he}" added to class ${classId}`,
               );
               pendingMap[classId].push(pending);
             } else {
@@ -192,14 +192,12 @@ export function AdminProvider({ children }) {
     }
   };
 
-  // Approve or reject question
+  // Approve or reject question using utility
   const handleQuestionApproval = async (classId, questionId, approved) => {
     try {
-      const questionRef = doc(db, "questions", questionId);
-
-      await updateDoc(questionRef, {
+      await updateDocument("questions", questionId, {
         status: approved ? "approved" : "rejected",
-        approvedAt: serverTimestamp(),
+        approvedAt: getServerTimestamp(),
         approvedBy: adminState.uid,
       });
 
@@ -245,16 +243,16 @@ export function AdminProvider({ children }) {
       if (!isMounted) return;
 
       if (user) {
-        const adminDocRef = doc(db, "admins", user.uid);
-        const adminDoc = await getDoc(adminDocRef);
+        // Use utility to get admin document
+        const adminData = await getDocument("admins", user.uid);
 
         if (!isMounted) return;
 
-        if (adminDoc.exists() && adminDoc.data().isAdmin) {
+        if (adminData && adminData.isAdmin) {
           setAdminState({
             uid: user.uid,
             email: user.email,
-            displayName: adminDoc.data().displayName || "Admin",
+            displayName: adminData.displayName || "Admin",
           });
           await loadClasses();
         }
