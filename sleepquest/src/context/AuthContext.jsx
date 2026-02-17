@@ -1,21 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
+import { signOut } from "firebase/auth";
+import { collection, addDoc } from "firebase/firestore";
+import { auth } from "../firebase";
+import { AuthContext, getTodayDate, hasSubmittedToday } from "./authHelpers";
 import {
-  signOut
-} from 'firebase/auth';
-import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  collection,
-  getDocs,
-  addDoc,
-  query,
-  where,
-  serverTimestamp
-} from 'firebase/firestore';
-import { auth, db } from '../firebase';
-import { AuthContext, getTodayDate, hasSubmittedToday } from './authHelpers';
+  getDocument,
+  updateDocument,
+  queryDocuments,
+  createSubcollectionDocument,
+  getServerTimestamp,
+  db,
+} from "../utils/firebaseUtils";
 
 export function AuthProvider({ children }) {
   const [authState, setAuthState] = useState(null);
@@ -28,48 +23,43 @@ export function AuthProvider({ children }) {
     try {
       console.log(`Fetching student data for ID: ${studentId}`);
 
-      // Get student by document ID directly
-      const studentRef = doc(db, 'students', studentId);
-      const studentDoc = await getDoc(studentRef);
+      // Get student document using utility
+      const studentData = await getDocument("students", studentId);
 
-      if (!studentDoc.exists()) {
+      if (!studentData) {
         console.log(`No student found with ID: ${studentId}`);
         return null;
       }
 
       console.log(`Found student by document ID: ${studentId}`);
 
-      const data = studentDoc.data();
-
-      // NEW: Fetch submissions from ROOT collection with query
-      const submissionsRef = collection(db, 'submissions');
-      const submissionsQuery = query(
-        submissionsRef,
-        where('studentToken', '==', studentId)
+      // Fetch submissions using utility
+      const responses = await queryDocuments(
+        "submissions",
+        "studentToken",
+        "==",
+        studentId,
       );
-      const submissionsSnap = await getDocs(submissionsQuery);
-      const responses = submissionsSnap.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data()
-      }));
 
-      console.log(`Found ${responses.length} submissions for student ${studentId}`);
+      console.log(
+        `Found ${responses.length} submissions for student ${studentId}`,
+      );
 
       return {
         uid: studentId,
-        token: studentId,  // GameView needs this
-        classId: data.classId || 'default',
-        coins: data.coins || 0,
-        inventory: data.inventory || ['skin_default'],
-        streak: data.streak || 0,
-        lastSubmissionDate: data.lastSubmissionDate || null,
-        totalDays: data.totalDays || 10,
-        completedDays: data.completedDays || responses.length,
+        token: studentId, // GameView needs this
+        classId: studentData.classId || "default",
+        coins: studentData.coins || 0,
+        inventory: studentData.inventory || ["skin_default"],
+        streak: studentData.streak || 0,
+        lastSubmissionDate: studentData.lastSubmissionDate || null,
+        totalDays: studentData.totalDays || 10,
+        completedDays: studentData.completedDays || responses.length,
         responses,
-        isUserDataReady: true  // Critical: allows GameView to remove loading screen
+        isUserDataReady: true, // Critical: allows GameView to remove loading screen
       };
     } catch (error) {
-      console.error('Error fetching student data:', error);
+      console.error("Error fetching student data:", error);
       return null;
     }
   }, []);
@@ -78,28 +68,33 @@ export function AuthProvider({ children }) {
   // LOGIN WITH STUDENT ID
   // ========================================
   const login = async (studentId) => {
-    // Validate student ID format (6 digits)
-    if (!/^\d{6}$/.test(studentId)) {
+    // Validate student ID format (6 alphanumeric characters)
+    if (!/^[A-Za-z0-9]{6}$/.test(studentId)) {
       console.warn(`Invalid student ID format: ${studentId}`);
       return {
         success: false,
-        error: 'קוד הגישה חייב להיות 6 ספרות בדיוק'
+        error: "קוד הגישה חייב להיות 6 תווים (אותיות ומספרים)",
       };
     }
 
+    // Normalize to uppercase for consistency
+    const normalizedStudentId = studentId.toUpperCase().trim();
+
     setIsLoading(true);
-    console.log(`Attempting login with student ID: ${studentId}`);
+    console.log(`Attempting login with student ID: ${normalizedStudentId}`);
 
     try {
       // Fetch student data by document ID
-      const studentData = await fetchStudentData(studentId);
+      const studentData = await fetchStudentData(normalizedStudentId);
 
       if (!studentData) {
-        console.error(`Login failed: Student not found with ID ${studentId}`);
+        console.error(
+          `Login failed: Student not found with ID ${normalizedStudentId}`,
+        );
         setIsLoading(false);
         return {
           success: false,
-          error: 'קוד גישה לא נמצא. אנא בדוק את הקוד.'
+          error: "קוד גישה לא נמצא. אנא בדוק את הקוד.",
         };
       }
 
@@ -107,45 +102,45 @@ export function AuthProvider({ children }) {
       console.log(`Login successful for student:`, studentData);
       setAuthState(studentData);
 
-      // Store student ID in localStorage for persistence
-      localStorage.setItem('sleepquest_studentId', studentId);
+      // Store normalized student ID in localStorage for persistence
+      localStorage.setItem("sleepquest_studentId", normalizedStudentId);
 
       // Sync game data with localStorage
-      localStorage.setItem('sleepquest_game_data', JSON.stringify({
-        completedDays: studentData.responses.length,
-        streak: studentData.streak,
-        coins: studentData.coins,
-        studentId: studentId
-      }));
+      localStorage.setItem(
+        "sleepquest_game_data",
+        JSON.stringify({
+          completedDays: studentData.responses.length,
+          streak: studentData.streak,
+          coins: studentData.coins,
+          studentId: normalizedStudentId,
+        }),
+      );
 
       setIsLoading(false);
       return {
         success: true,
-        hasSubmittedToday: hasSubmittedToday(studentData.lastSubmissionDate)
+        hasSubmittedToday: hasSubmittedToday(studentData.lastSubmissionDate),
       };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       setIsLoading(false);
       return {
         success: false,
-        error: 'שגיאה בהתחברות. נסה שוב.'
+        error: "שגיאה בהתחברות. נסה שוב.",
       };
     }
   };
 
-  // ========================================
-  // LOGOUT
-  // ========================================
   const logout = async () => {
     try {
-      console.log('Logging out...');
+      console.log("Logging out...");
       await signOut(auth);
-      localStorage.removeItem('sleepquest_studentId');
-      localStorage.removeItem('sleepquest_game_data');
+      localStorage.removeItem("sleepquest_studentId");
+      localStorage.removeItem("sleepquest_game_data");
       setAuthState(null);
-      console.log('Logout successful');
+      console.log("Logout successful");
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -156,7 +151,7 @@ export function AuthProvider({ children }) {
     if (!authState) {
       return {
         success: false,
-        error: 'משתמש לא מחובר'
+        error: "משתמש לא מחובר",
       };
     }
 
@@ -164,18 +159,16 @@ export function AuthProvider({ children }) {
       const today = getTodayDate();
       console.log(`Submitting questionnaire for ${today}...`);
 
-      // Get student document
-      const studentRef = doc(db, 'students', authState.uid);
-      const studentDoc = await getDoc(studentRef);
+      // Get student document using utility
+      const studentData = await getDocument("students", authState.uid);
 
-      if (!studentDoc.exists()) {
+      if (!studentData) {
         return {
           success: false,
-          error: 'תלמיד לא נמצא'
+          error: "תלמיד לא נמצא",
         };
       }
 
-      const studentData = studentDoc.data();
       const currentStreak = studentData.streak || 0;
       const lastSubmission = studentData.lastSubmissionDate;
       const currentCompletedDays = studentData.completedDays || 0;
@@ -199,34 +192,37 @@ export function AuthProvider({ children }) {
 
       // Check if already submitted today using lastSubmissionDate (reliable)
       if (lastSubmission === today) {
-        console.warn(`Student already submitted today (based on lastSubmissionDate)`);
+        console.warn(
+          `Student already submitted today (based on lastSubmissionDate)`,
+        );
         return {
           success: false,
-          error: 'כבר הגשת את השאלון היום'
+          error: "כבר הגשת את השאלון היום",
         };
       }
 
-      // Save submission to ROOT submissions collection
-      const submissionsRef = collection(db, 'submissions');
+      const submissionsRef = collection(db, "submissions");
       await addDoc(submissionsRef, {
         studentToken: authState.uid,
         classId: authState.classId,
         answers: answers,
-        createdAt: serverTimestamp(),
-        submittedAt: serverTimestamp()
+        createdAt: getServerTimestamp(),
+        submittedAt: getServerTimestamp(),
       });
 
       console.log(`Submission saved to root submissions collection`);
 
-      // Update student document with new fields
+      // Update student document with new fields using utility
       const newCompletedDays = currentCompletedDays + 1;
-      await updateDoc(studentRef, {
+      await updateDocument("students", authState.uid, {
         lastSubmissionDate: today,
         streak: newStreak,
-        completedDays: newCompletedDays
+        completedDays: newCompletedDays,
       });
 
-      console.log(`Student document updated. New streak: ${newStreak}, completedDays: ${newCompletedDays}`);
+      console.log(
+        `Student document updated. New streak: ${newStreak}, completedDays: ${newCompletedDays}`,
+      );
 
       // Update local state
       const updatedState = {
@@ -234,126 +230,123 @@ export function AuthProvider({ children }) {
         lastSubmissionDate: today,
         streak: newStreak,
         completedDays: newCompletedDays,
-        responses: [...authState.responses, { 
-          studentToken: authState.uid,
-          classId: authState.classId,
-          answers, 
-          submittedAt: new Date().toISOString() 
-        }]
+        responses: [
+          ...authState.responses,
+          {
+            studentToken: authState.uid,
+            classId: authState.classId,
+            answers,
+            submittedAt: new Date().toISOString(),
+          },
+        ],
       };
 
       setAuthState(updatedState);
 
       // Sync with localStorage
-      localStorage.setItem('sleepquest_game_data', JSON.stringify({
-        completedDays: newCompletedDays,
-        streak: updatedState.streak,
-        coins: updatedState.coins,
-        studentId: authState.uid
-      }));
+      localStorage.setItem(
+        "sleepquest_game_data",
+        JSON.stringify({
+          completedDays: newCompletedDays,
+          streak: updatedState.streak,
+          coins: updatedState.coins,
+          studentId: authState.uid,
+        }),
+      );
 
       return {
         success: true,
-        message: 'הגשה בוצעה בהצלחה!',
-        newStreak: newStreak
+        message: "הגשה בוצעה בהצלחה!",
+        newStreak: newStreak,
       };
     } catch (error) {
-      console.error('Submit error:', error);
+      console.error("Submit error:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   };
 
-  // ========================================
-  // SUBMIT CUSTOM QUESTION
-  // ========================================
   const submitCustomQuestion = async (questionText, proposedText, reason) => {
     if (!authState) {
       return {
         success: false,
-        error: 'משתמש לא מחובר'
+        error: "משתמש לא מחובר",
       };
     }
 
     try {
       console.log(`Submitting custom question...`);
 
-      // Save question to student's questions subcollection
-      const questionsRef = collection(db, 'students', authState.uid, 'questions');
-
-      await setDoc(doc(questionsRef), {
-        questionText: questionText,
-        proposedText: proposedText,
-        reason: reason,
-        status: 'pending',
-        submittedAt: serverTimestamp(),
-        approvedAt: null,
-        approvedBy: null
-      });
+      // Save question to student's questions subcollection using utility
+      await createSubcollectionDocument(
+        "students",
+        authState.uid,
+        "questions",
+        {
+          questionText: questionText,
+          proposedText: proposedText,
+          reason: reason,
+          status: "pending",
+          submittedAt: getServerTimestamp(),
+          approvedAt: null,
+          approvedBy: null,
+        },
+      );
 
       console.log(`Custom question submitted`);
 
       return {
         success: true,
-        message: 'השאלה הוגשה בהצלחה וממתינה לאישור'
+        message: "השאלה הוגשה בהצלחה וממתינה לאישור",
       };
     } catch (error) {
-      console.error('Question submit error:', error);
+      console.error("Question submit error:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   };
 
-  // ========================================
-  // GET QUESTIONNAIRE QUESTIONS (UPDATED FOR MULTI-CLASS)
-  // ========================================
   const getQuestions = useCallback(async () => {
     if (!authState) return [];
 
     try {
       console.log(`Fetching questions for class: ${authState.classId}`);
 
-      const questionsRef = collection(db, 'questions');
-
-      // Fetch ALL approved questions
-      // Then filter by: status='approved' AND (classIds contains 'all' OR classIds contains studentClass)
-      const snapshot = await getDocs(
-        query(
-          questionsRef,
-          where('status', '==', 'approved')
-        )
+      // Fetch all approved questions using utility
+      const allQuestions = await queryDocuments(
+        "questions",
+        "status",
+        "==",
+        "approved",
       );
 
       // Filter by multi-class support
-      const questions = snapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-        .filter(q => {
-          // Check if question is for all classes
-          if (q.classIds && q.classIds.includes('all')) {
-            return true;
-          }
-          // Check if question is for this student's class
-          if (q.classIds && q.classIds.includes(authState.classId)) {
-            return true;
-          }
-          // Fallback for old questions without classIds
-          if (!q.classIds && q.classId === authState.classId) {
-            return true;
-          }
-          return false;
-        });
+      const questions = allQuestions.filter((q) => {
+        // Check if question is for all classes
+        if (q.classIds && q.classIds.includes("all")) {
+          return true;
+        }
+        // Check if question is for this student's class
+        if (q.classIds && q.classIds.includes(authState.classId)) {
+          return true;
+        }
+        // Fallback for old questions without classIds
+        if (!q.classIds && q.classId === authState.classId) {
+          return true;
+        }
+        return false;
+      });
 
-      console.log(`Found ${questions.length} approved questions for class ${authState.classId}`);
+      console.log(
+        `Found ${questions.length} approved questions for class ${authState.classId}`,
+      );
       return questions;
     } catch (error) {
-      console.error('Error getting questions:', error);
+      console.error("Error getting questions:", error);
       return [];
     }
   }, [authState]);
@@ -382,7 +375,7 @@ export function AuthProvider({ children }) {
     let isMounted = true;
 
     const restoreSession = async () => {
-      const savedStudentId = localStorage.getItem('sleepquest_studentId');
+      const savedStudentId = localStorage.getItem("sleepquest_studentId");
       if (savedStudentId) {
         console.log(`Restoring session with student ID: ${savedStudentId}`);
         const data = await fetchStudentData(savedStudentId);
@@ -394,8 +387,8 @@ export function AuthProvider({ children }) {
           setAuthState(data);
         } else {
           console.warn(`Saved student ID is no longer valid`);
-          localStorage.removeItem('sleepquest_studentId');
-          localStorage.removeItem('sleepquest_game_data');
+          localStorage.removeItem("sleepquest_studentId");
+          localStorage.removeItem("sleepquest_game_data");
         }
       }
 
@@ -419,13 +412,13 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!authState,
     isLoading,
     studentId: authState?.uid,
-    token: authState?.token,  // GameView needs this
+    token: authState?.token, // GameView needs this
     classId: authState?.classId,
-    isUserDataReady: authState?.isUserDataReady || false,  // GameView loading check
+    isUserDataReady: authState?.isUserDataReady || false, // GameView loading check
 
     // Game data
     coins: authState?.coins || 0,
-    inventory: authState?.inventory || ['skin_default'],
+    inventory: authState?.inventory || ["skin_default"],
     streak: authState?.streak || 0,
     totalDays: authState?.totalDays || 10,
     completedDays: authState?.completedDays || 0,
@@ -439,20 +432,14 @@ export function AuthProvider({ children }) {
     submitQuestionnaire,
     submitCustomQuestion,
 
-    // Question functions (UPDATED FOR MULTI-CLASS)
     getQuestions,
-    
+
     // Utility functions
     canSubmitToday,
     hasSubmittedToday: () => hasSubmittedToday(authState?.lastSubmissionDate),
     getStreak,
-    getAllResponses
+    getAllResponses,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-
